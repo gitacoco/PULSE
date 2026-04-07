@@ -1,0 +1,1060 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RewardsTicket Dashboard</title>
+  <style>
+    :root {
+      --bg: #ffffff;
+      --text: #111827;
+      --muted: #6b7280;
+      --line: #d9dde4;
+      --line-strong: #bfc6d1;
+      --primary: #111111;
+      --secondary-fill: #9ca3af;
+      --ok: #059669;
+      --danger: #dc2626;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      min-height: 100%;
+      font-family: "SF Pro Display", "SF Pro Text", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--text);
+      background: var(--bg);
+    }
+
+    body {
+      padding: 0;
+    }
+
+    .shell {
+      width: 100%;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .hero {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .title {
+      margin: 0;
+      font-size: 28px;
+      letter-spacing: -0.02em;
+      font-weight: 700;
+    }
+
+    .subtitle {
+      display: none;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 1fr 4fr;
+      flex: 1;
+      min-height: 0;
+      align-items: stretch;
+    }
+
+    .left-column {
+      display: grid;
+      grid-template-rows: auto auto 1fr;
+      border-right: 1px solid var(--line);
+      min-height: 100%;
+    }
+
+    .panel {
+      background: #fff;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .left-column .panel:last-child {
+      border-bottom: 0;
+    }
+
+    .panel.is-panel-collapsed {
+      border-bottom: 0;
+    }
+
+    .result-panel {
+      border-bottom: 0;
+      min-height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--line);
+      padding: 10px 12px;
+    }
+
+    .panel-header-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .panel-title {
+      margin: 0;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .panel-sub {
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .collapse-btn {
+      width: 16px;
+      height: 16px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: 0;
+      background: transparent;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1;
+      padding: 0;
+      cursor: pointer;
+    }
+
+    .collapse-btn:hover {
+      color: var(--text);
+    }
+
+    .collapse-btn .chev {
+      display: inline-block;
+      transition: transform 0.12s ease;
+      transform: rotate(0deg);
+    }
+
+    .collapse-btn[aria-expanded="false"] .chev {
+      transform: rotate(-90deg);
+    }
+
+    .panel-body {
+      padding: 10px;
+    }
+
+    .list {
+      max-height: 220px;
+      overflow: auto;
+      padding-right: 2px;
+    }
+
+    .query-item {
+      border-bottom: 1px solid var(--line);
+      padding: 8px 4px;
+      background: #fff;
+      cursor: pointer;
+      transition: background-color 0.12s ease;
+      position: relative;
+    }
+
+    .query-item.selected {
+      background: #f3f4f6;
+    }
+
+    .query-item:hover {
+      background: #f8f8f8;
+    }
+
+    #pastList .query-item:last-child {
+      border-bottom: 0;
+    }
+
+    #upcomingList .query-item:last-child {
+      border-bottom: 0;
+    }
+
+    .query-item.selected .query-meta {
+      color: #111111;
+      font-weight: 600;
+    }
+
+    .query-item.selected .chip {
+      color: #111111;
+    }
+
+    .query-check {
+      width: 14px;
+      height: 14px;
+      border-radius: 999px;
+      border: 1.5px solid var(--line-strong);
+      background: #fff;
+      flex: 0 0 auto;
+      margin-left: auto;
+      position: relative;
+    }
+
+    .next-query-wrap {
+      display: grid;
+      gap: 8px;
+    }
+
+    .next-query-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+      color: var(--muted);
+      border-bottom: 1px solid var(--line);
+      padding-bottom: 8px;
+    }
+
+    .next-query-time {
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    .next-query-control {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+      align-items: end;
+    }
+
+    .inline-confirm {
+      width: auto;
+      min-width: 78px;
+      padding: 7px 10px;
+      margin-top: 0;
+    }
+
+    .query-item.selected .query-check {
+      border-color: #111111;
+      background: #111111;
+    }
+
+    .query-item.selected .query-check::after {
+      content: "";
+      position: absolute;
+      inset: 3px;
+      border-radius: 999px;
+      background: #fff;
+    }
+
+    .query-meta {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      color: var(--muted);
+      margin-bottom: 6px;
+      gap: 8px;
+    }
+
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      margin-bottom: 4px;
+    }
+
+    .chip {
+      padding: 0;
+      font-size: 10px;
+      line-height: 1;
+      border: 0;
+      background: transparent;
+      color: var(--muted);
+    }
+
+    .chip.hit {
+      color: #0b4a3f;
+      font-weight: 600;
+    }
+
+    .ghost-btn,
+    .primary-btn {
+      width: 100%;
+      padding: 9px 10px;
+      border: 1px solid var(--line-strong);
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 12px;
+      background: #fff;
+      color: var(--text);
+    }
+
+    .ghost-btn {
+      margin-top: 6px;
+    }
+
+    .primary-btn {
+      margin-top: 8px;
+      color: #fff;
+      background: var(--primary);
+      border-color: var(--primary);
+    }
+
+    .secondary-btn {
+      border: 1px solid #C8D0DC;
+      background: #C8D0DC;
+      color: #111111;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 8px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 4px;
+      font-size: 11px;
+      color: var(--muted);
+      font-weight: 500;
+    }
+
+    input {
+      width: 100%;
+      padding: 8px 10px;
+      border: 0;
+      border-radius: 2px;
+      background: #f7f8fa;
+      color: var(--text);
+      font-size: 13px;
+      outline: none;
+    }
+
+    input:focus {
+      background: #f3f3f3;
+    }
+
+    .status {
+      margin-top: 8px;
+      min-height: 18px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .status.ok {
+      color: var(--ok);
+    }
+
+    .status.error {
+      color: var(--danger);
+    }
+
+    .toast {
+      position: fixed;
+      top: 14px;
+      right: 14px;
+      z-index: 9999;
+      min-width: 220px;
+      max-width: 360px;
+      padding: 10px 12px;
+      border-radius: 6px;
+      border: 1px solid var(--line-strong);
+      background: #111111;
+      color: #ffffff;
+      font-size: 12px;
+      opacity: 0;
+      transform: translateY(-6px);
+      pointer-events: none;
+      transition: opacity 0.18s ease, transform 0.18s ease;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .toast.ok {
+      background: #1f2937;
+    }
+
+    .toast.error {
+      background: #7f1d1d;
+      border-color: #b91c1c;
+    }
+
+    .result-meta {
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    .result-columns {
+      display: grid;
+      grid-template-columns: 1.2fr 0.9fr 0.8fr 0.8fr 0.9fr 0.7fr;
+      gap: 8px;
+      padding: 8px 4px;
+      margin-bottom: 10px;
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .program-header-cell {
+      position: relative;
+    }
+
+    .program-filter-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      border: 0;
+      background: transparent;
+      color: inherit;
+      font: inherit;
+      font-weight: 600;
+      text-transform: inherit;
+      letter-spacing: inherit;
+      padding: 0;
+      cursor: pointer;
+    }
+
+    .program-filter-indicator {
+      font-size: 10px;
+      line-height: 1;
+      transition: transform 0.12s ease;
+    }
+
+    .program-filter-toggle[aria-expanded="true"] .program-filter-indicator {
+      transform: rotate(180deg);
+    }
+
+    .program-filter-menu {
+      position: absolute;
+      top: 22px;
+      left: 0;
+      z-index: 20;
+      min-width: 190px;
+      max-height: 220px;
+      overflow: auto;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      padding: 6px 8px;
+      display: none;
+      box-shadow: 0 8px 18px rgba(17, 24, 39, 0.12);
+    }
+
+    .program-filter-menu.open {
+      display: block;
+    }
+
+    .program-filter-item {
+      display: grid;
+      grid-template-columns: 16px 1fr;
+      align-items: center;
+      column-gap: 8px;
+      min-height: 24px;
+      font-size: 11px;
+      color: var(--text);
+      padding: 2px 0;
+      text-transform: none;
+      letter-spacing: 0;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+
+    .program-filter-item input[type="checkbox"] {
+      width: 14px;
+      height: 14px;
+      margin: 0;
+      padding: 0;
+      border: 1px solid var(--line-strong);
+      border-radius: 2px;
+      background: #fff;
+      accent-color: #111111;
+    }
+
+    .program-filter-item span {
+      line-height: 1.2;
+    }
+
+    .flight-list {
+      max-height: 66vh;
+      overflow: auto;
+      padding-right: 2px;
+    }
+
+    .flight-card {
+      border: 1px solid var(--line);
+      margin-top: -1px;
+      padding: 10px 8px;
+      background: #fff;
+    }
+
+    .flight-card:first-child {
+      margin-top: 0;
+      border-top-left-radius: 8px;
+      border-top-right-radius: 8px;
+    }
+
+    .flight-card:last-child {
+      border-bottom-left-radius: 8px;
+      border-bottom-right-radius: 8px;
+    }
+
+    .flight-row {
+      display: grid;
+      grid-template-columns: 1.2fr 0.9fr 0.8fr 0.8fr 0.9fr 0.7fr;
+      gap: 8px;
+      align-items: center;
+      font-size: 13px;
+    }
+
+    .cell-muted {
+      color: var(--muted);
+    }
+
+    .cell-strong {
+      font-weight: 600;
+    }
+
+    .meta-inline {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    @media (max-width: 980px) {
+      .result-columns,
+      .flight-row {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    .empty {
+      border: 1px dashed var(--line-strong);
+      background: #fff;
+      padding: 10px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    @media (max-width: 1200px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+
+      .left-column {
+        grid-template-columns: 1fr 1fr;
+        border-right: 0;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .left-column .panel:last-child {
+        grid-column: 1 / -1;
+      }
+    }
+
+    @media (max-width: 800px) {
+      .left-column {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .is-collapsed {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header class="hero">
+      <h1 class="title">RewardsTicket</h1>
+    </header>
+
+    <section class="layout">
+      <aside class="left-column">
+        <section class="panel">
+          <div class="panel-header">
+            <div class="panel-header-left">
+              <h2 class="panel-title">Past Queries</h2>
+            </div>
+          </div>
+          <div class="panel-body">
+            <div id="pastList" class="list">
+              <div class="empty">Loading...</div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel" id="upcomingPanel">
+          <div class="panel-header">
+            <div class="panel-header-left">
+              <h2 class="panel-title">Next Query</h2>
+            </div>
+            <button class="collapse-btn" type="button" data-toggle-target="upcomingBody" aria-expanded="true" aria-label="Toggle Upcoming Queries">
+              <span class="chev">▾</span>
+            </button>
+          </div>
+          <div class="panel-body" id="upcomingBody">
+            <div id="upcomingList">
+              <div class="empty">No next query yet.</div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel" id="criteriaPanel">
+          <div class="panel-header">
+            <div class="panel-header-left">
+              <h2 class="panel-title">Query Criteria</h2>
+            </div>
+            <button class="collapse-btn" type="button" data-toggle-target="criteriaBody" aria-expanded="true" aria-label="Toggle Query Criteria">
+              <span class="chev">▾</span>
+            </button>
+          </div>
+          <div class="panel-body" id="criteriaBody">
+            <form id="runForm">
+              <div class="form-grid">
+                <div>
+                  <label>Origin Airports</label>
+                  <input id="origin" required />
+                </div>
+                <div>
+                  <label>Destination Airports</label>
+                  <input id="destination" required />
+                </div>
+                <div>
+                  <label>Start Date</label>
+                  <input id="startDate" type="date" required />
+                </div>
+                <div>
+                  <label>End Date</label>
+                  <input id="endDate" type="date" required />
+                </div>
+                <div>
+                  <label>Cabin</label>
+                  <input id="cabin" value="business" />
+                </div>
+                <div>
+                  <label>Max Mileage</label>
+                  <input id="maxMileage" type="number" value="100000" />
+                </div>
+              </div>
+              <button class="primary-btn" type="submit">Off-cycle Run</button>
+            </form>
+          </div>
+        </section>
+      </aside>
+
+      <section class="panel result-panel">
+        <div class="panel-header">
+          <div class="panel-header-left">
+            <h2 class="panel-title">Results of Selected Query</h2>
+          </div>
+          <span id="resultMeta" class="panel-sub">Run a query or select one.</span>
+        </div>
+        <div class="panel-body">
+          <div class="result-columns">
+            <div>Date</div>
+            <div class="program-header-cell">
+              <button id="programFilterToggle" class="program-filter-toggle" type="button" aria-haspopup="true" aria-expanded="false">
+                <span>Program</span>
+                <span class="program-filter-indicator">▾</span>
+              </button>
+              <div id="programFilterMenu" class="program-filter-menu"></div>
+            </div>
+            <div>Origin</div>
+            <div>Destination</div>
+            <div>Mileage</div>
+            <div>Seats</div>
+          </div>
+          <div id="flightList" class="flight-list">
+            <div class="empty">No result selected.</div>
+          </div>
+        </div>
+      </section>
+    </section>
+  </main>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    const state = {
+      past: [],
+      upcoming: [],
+      nextQuery: null,
+      selectedId: null,
+      availablePrograms: [],
+      selectedPrograms: [],
+      programMenuOpen: false,
+    };
+    let toastTimer = null;
+
+    function numberWithComma(n) {
+      return Number(n || 0).toLocaleString();
+    }
+
+    function normalizeAirportCsv(value) {
+      return String(value || "")
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean)
+        .join(", ");
+    }
+
+    function serializeAirportCsv(value) {
+      return String(value || "")
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean)
+        .join(",");
+    }
+
+    function formatDate(raw) {
+      if (!raw) return "-";
+      const d = new Date(raw);
+      return Number.isNaN(d.getTime()) ? raw : d.toLocaleString();
+    }
+
+    function formatFlightDateTime(raw) {
+      if (!raw) return "-";
+      // Cached search often returns date-only strings; avoid displaying fake 00:00.
+      if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
+      const d = new Date(raw);
+      if (Number.isNaN(d.getTime())) return raw;
+      const pad = (n) => String(n).padStart(2, "0");
+      return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    }
+
+    function queryParamsFromForm() {
+      return {
+        origin_airport: serializeAirportCsv(document.getElementById("origin").value),
+        destination_airport: serializeAirportCsv(document.getElementById("destination").value),
+        start_date: document.getElementById("startDate").value,
+        end_date: document.getElementById("endDate").value,
+        cabin: document.getElementById("cabin").value.trim() || "business",
+        only_direct_flights: "true",
+        order_by: "lowest_mileage",
+        take: "200",
+      };
+    }
+
+    function setStatus(text, type) {
+      const el = document.getElementById("toast");
+      el.textContent = text;
+      el.className = "toast show";
+      if (type) el.classList.add(type);
+      if (toastTimer) {
+        clearTimeout(toastTimer);
+      }
+      toastTimer = setTimeout(() => {
+        el.classList.remove("show");
+      }, 2200);
+    }
+
+    function uniquePrograms(hits) {
+      const set = new Set();
+      (hits || []).forEach((h) => {
+        const v = (h.source || "").trim();
+        if (v) set.add(v);
+      });
+      return Array.from(set).sort((a, b) => a.localeCompare(b));
+    }
+
+    function syncSelectedPrograms(programs, resetToAll) {
+      state.availablePrograms = programs;
+      if (resetToAll || !state.selectedPrograms.length) {
+        state.selectedPrograms = [...programs];
+        return;
+      }
+      state.selectedPrograms = state.selectedPrograms.filter((p) => programs.includes(p));
+      if (!state.selectedPrograms.length) {
+        state.selectedPrograms = [...programs];
+      }
+    }
+
+    function renderProgramFilterMenu() {
+      const menu = document.getElementById("programFilterMenu");
+      const toggle = document.getElementById("programFilterToggle");
+      if (!menu || !toggle) return;
+
+      if (!state.availablePrograms.length) {
+        menu.classList.remove("open");
+        menu.innerHTML = "";
+        toggle.setAttribute("aria-expanded", "false");
+        return;
+      }
+
+      const allChecked = state.selectedPrograms.length === state.availablePrograms.length;
+      const items = [
+        `<label class="program-filter-item"><input type="checkbox" id="programFilterAll" ${allChecked ? "checked" : ""}><span>All Programs</span></label>`,
+        ...state.availablePrograms.map(
+          (p) =>
+            `<label class="program-filter-item"><input type="checkbox" class="programFilterItem" value="${p}" ${
+              state.selectedPrograms.includes(p) ? "checked" : ""
+            }><span>${p}</span></label>`
+        ),
+      ].join("");
+      menu.innerHTML = items;
+      menu.classList.toggle("open", state.programMenuOpen);
+      toggle.setAttribute("aria-expanded", state.programMenuOpen ? "true" : "false");
+
+      const all = document.getElementById("programFilterAll");
+      if (all) {
+        all.addEventListener("change", () => {
+          state.selectedPrograms = all.checked ? [...state.availablePrograms] : [];
+          renderCurrentSelectedResult();
+        });
+      }
+      menu.querySelectorAll(".programFilterItem").forEach((el) => {
+        el.addEventListener("change", () => {
+          const checked = Array.from(menu.querySelectorAll(".programFilterItem:checked")).map((x) => x.value);
+          state.selectedPrograms = checked;
+          renderCurrentSelectedResult();
+        });
+      });
+    }
+
+    function getSelectedRecord() {
+      if (!state.selectedId) return null;
+      return state.past.find((q) => q.id === state.selectedId) || null;
+    }
+
+    function renderCurrentSelectedResult() {
+      renderFlightCards(getSelectedRecord());
+      renderPast();
+    }
+
+    function renderFlightCards(record) {
+      const flightList = document.getElementById("flightList");
+      const resultMeta = document.getElementById("resultMeta");
+
+      if (!record) {
+        resultMeta.textContent = "Run a query or select one.";
+        state.availablePrograms = [];
+        state.selectedPrograms = [];
+        renderProgramFilterMenu();
+        flightList.innerHTML = '<div class="empty">No result selected.</div>';
+        return;
+      }
+
+      syncSelectedPrograms(uniquePrograms(record.hits || []), false);
+      renderProgramFilterMenu();
+
+      const filteredHits = (record.hits || []).filter((h) => {
+        if (!state.availablePrograms.length) return true;
+        const source = (h.source || "").trim();
+        return state.selectedPrograms.includes(source);
+      });
+
+      resultMeta.textContent = `Created ${formatDate(record.created_at)} · ${filteredHits.length}/${record.total_hits} hits`;
+
+      if (!filteredHits.length) {
+        flightList.innerHTML = '<div class="empty">No matching flight under your mileage limit.</div>';
+        return;
+      }
+
+      flightList.innerHTML = filteredHits
+        .map((h) => `
+            <article class="flight-card">
+              <div class="flight-row">
+                <div class="cell-muted">${formatFlightDateTime(h.date)}</div>
+                <div>${h.source || "-"}</div>
+                <div class="cell-strong">${h.origin || "-"}</div>
+                <div class="cell-strong">${h.destination || "-"}</div>
+                <div>${numberWithComma(h.mileage)}</div>
+                <div>${h.seats ?? "-"}</div>
+              </div>
+            </article>
+          `)
+        .join("");
+    }
+
+    function renderPast() {
+      const root = document.getElementById("pastList");
+      if (!state.past.length) {
+        root.innerHTML = '<div class="empty">No query has run yet.</div>';
+        return;
+      }
+      root.innerHTML = state.past
+        .map((q) => {
+          const selected = state.selectedId === q.id ? "selected" : "";
+          return `
+            <div class="query-item ${selected}" data-id="${q.id}">
+              <div class="query-meta">
+                <span>${formatDate(q.created_at)}</span>
+                <span class="query-check" aria-hidden="true"></span>
+              </div>
+              <div class="chips">
+                <span class="chip hit">${q.total_hits} hits</span>
+              </div>
+            </div>
+          `;
+        })
+        .join("");
+      document.querySelectorAll(".query-item[data-id]").forEach((item) => {
+        item.addEventListener("click", () => showResult(item.dataset.id));
+      });
+    }
+
+    function renderUpcoming() {
+      const root = document.getElementById("upcomingList");
+      const q = state.nextQuery;
+      const intervalValue = q?.interval_minutes ?? 60;
+      const nextRunText = q?.next_run_at ? formatDate(q.next_run_at) : "-";
+      root.innerHTML = `
+        <div class="next-query-wrap">
+          <div class="next-query-row">
+            <span>Next Run</span>
+            <span class="next-query-time">${nextRunText}</span>
+          </div>
+          <div class="next-query-control">
+            <div>
+              <label>Interval Minutes</label>
+              <input id="nextQueryInterval" type="number" value="${intervalValue}" min="1" />
+            </div>
+            <button id="confirmNextQueryBtn" class="secondary-btn inline-confirm" type="button">Re-apply</button>
+          </div>
+        </div>
+      `;
+
+      const confirmBtn = document.getElementById("confirmNextQueryBtn");
+      const intervalInput = document.getElementById("nextQueryInterval");
+      if (confirmBtn && intervalInput) {
+        confirmBtn.addEventListener("click", async () => {
+          const val = Number(intervalInput.value || 60);
+          if (!Number.isFinite(val) || val <= 0) {
+            setStatus("Interval must be greater than 0.", "error");
+            return;
+          }
+          await upsertNextQuery(val);
+        });
+      }
+    }
+
+    async function upsertNextQuery(intervalMinutes) {
+      const body = {
+        name: state.nextQuery?.name || "Hourly Search",
+        interval_minutes: intervalMinutes,
+        params: queryParamsFromForm(),
+      };
+      const res = await fetch("/api/query/schedule", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      if (data.error) {
+        setStatus(`Next query error: ${data.error}`, "error");
+        return;
+      }
+      state.nextQuery = data;
+      state.upcoming = data ? [data] : [];
+      renderUpcoming();
+      setStatus("Next query reset.", "ok");
+    }
+
+    async function showResult(id) {
+      const res = await fetch(`/api/query/${id}`);
+      const data = await res.json();
+      if (data.error) {
+        setStatus(`Error: ${data.error}`, "error");
+        return;
+      }
+      state.selectedId = data.id;
+      state.selectedPrograms = [];
+      state.availablePrograms = [];
+      renderCurrentSelectedResult();
+    }
+
+    async function loadState() {
+      const res = await fetch("/api/state");
+      const data = await res.json();
+      state.past = data.past_queries || [];
+      state.upcoming = data.upcoming_queries || [];
+      state.nextQuery = data.next_query || state.upcoming[state.upcoming.length - 1] || null;
+      const d = data.default_params || {};
+      document.getElementById("origin").value = normalizeAirportCsv(d.origin_airport || "");
+      document.getElementById("destination").value = normalizeAirportCsv(d.destination_airport || "");
+      document.getElementById("startDate").value = d.start_date || "";
+      document.getElementById("endDate").value = d.end_date || "";
+      document.getElementById("cabin").value = d.cabin || "business";
+      renderPast();
+      renderUpcoming();
+      if (state.past.length) {
+        state.selectedId = state.past[0].id;
+        state.selectedPrograms = [];
+        state.availablePrograms = [];
+        renderCurrentSelectedResult();
+      } else {
+        renderFlightCards(null);
+      }
+    }
+
+    document.getElementById("runForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      setStatus("Running query...", "");
+      const body = {
+        params: queryParamsFromForm(),
+        max_mileage: Number(document.getElementById("maxMileage").value || 100000),
+      };
+      const res = await fetch("/api/query/run", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      if (data.error) {
+        setStatus(`Error: ${data.error}`, "error");
+        return;
+      }
+      setStatus(`Done. ${data.total_hits} matching flights found.`, "ok");
+      state.selectedId = data.id;
+      state.past.unshift(data);
+      state.selectedPrograms = [];
+      state.availablePrograms = [];
+      renderCurrentSelectedResult();
+    });
+
+    document.getElementById("programFilterToggle").addEventListener("click", (e) => {
+      e.stopPropagation();
+      state.programMenuOpen = !state.programMenuOpen;
+      renderProgramFilterMenu();
+    });
+
+    document.addEventListener("click", (e) => {
+      const menu = document.getElementById("programFilterMenu");
+      const toggle = document.getElementById("programFilterToggle");
+      if (!menu || !toggle) return;
+      const target = e.target;
+      if (menu.contains(target) || toggle.contains(target)) return;
+      if (!state.programMenuOpen) return;
+      state.programMenuOpen = false;
+      renderProgramFilterMenu();
+    });
+
+    document.querySelectorAll(".collapse-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const targetId = btn.getAttribute("data-toggle-target");
+        const body = document.getElementById(targetId);
+        const panel = btn.closest(".panel");
+        if (!body) return;
+        const willCollapse = !body.classList.contains("is-collapsed");
+        body.classList.toggle("is-collapsed", willCollapse);
+        if (panel) {
+          panel.classList.toggle("is-panel-collapsed", willCollapse);
+        }
+        btn.setAttribute("aria-expanded", willCollapse ? "false" : "true");
+      });
+    });
+
+    loadState();
+  </script>
+</body>
+</html>
