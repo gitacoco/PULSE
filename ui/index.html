@@ -398,6 +398,10 @@
       font-weight: 500;
     }
 
+    .hidden {
+      display: none !important;
+    }
+
     .form-grid {
       display: grid;
       grid-template-columns: 1fr;
@@ -780,6 +784,9 @@
               </div>
               <button class="primary-btn" type="submit">Off-cycle Run</button>
             </form>
+            <button id="applyCriteriaBtn" class="secondary-btn hidden" type="button" style="margin-top:8px;">
+              Apply Criteria to Next Query
+            </button>
           </div>
         </section>
       </aside>
@@ -824,6 +831,7 @@
       availablePrograms: [],
       selectedPrograms: [],
       programMenuOpen: false,
+      criteriaBaseline: null,
     };
     let toastTimer = null;
 
@@ -891,6 +899,48 @@
         order_by: "lowest_mileage",
         take: "200",
       };
+    }
+
+    function normalizeCriteria(params) {
+      const p = params || {};
+      return {
+        origin_airport: serializeAirportCsv(p.origin_airport || ""),
+        destination_airport: serializeAirportCsv(p.destination_airport || ""),
+        start_date: p.start_date || "",
+        end_date: p.end_date || "",
+        cabin: String(p.cabin || "business").toLowerCase(),
+        only_direct_flights: parseBooleanish(p.only_direct_flights, true) ? "true" : "false",
+        order_by: p.order_by || "lowest_mileage",
+        take: String(p.take || "200"),
+      };
+    }
+
+    function criteriaEquals(a, b) {
+      return JSON.stringify(normalizeCriteria(a)) === JSON.stringify(normalizeCriteria(b));
+    }
+
+    function updateCriteriaApplyButton() {
+      const btn = document.getElementById("applyCriteriaBtn");
+      if (!btn) return;
+      if (!state.nextQuery || !state.criteriaBaseline) {
+        btn.classList.add("hidden");
+        return;
+      }
+      const changed = !criteriaEquals(queryParamsFromForm(), state.criteriaBaseline);
+      btn.classList.toggle("hidden", !changed);
+    }
+
+    function attachCriteriaChangeWatchers() {
+      const ids = ["origin", "destination", "startDate", "endDate", "cabin", "onlyDirectFlights"];
+      ids.forEach((id) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        const evt = el.tagName === "INPUT" && el.type === "checkbox" ? "change" : "input";
+        el.addEventListener(evt, updateCriteriaApplyButton);
+        if (evt !== "change") {
+          el.addEventListener("change", updateCriteriaApplyButton);
+        }
+      });
     }
 
     function formatCabinDisplay(value) {
@@ -1130,8 +1180,29 @@
       }
       state.nextQuery = data;
       state.upcoming = data ? [data] : [];
+      state.criteriaBaseline = normalizeCriteria(data?.params || {});
       renderUpcoming();
+      updateCriteriaApplyButton();
       setStatus("Next query reset.", "ok");
+    }
+
+    async function applyCriteriaToNextQuery() {
+      if (!state.nextQuery) return;
+      const params = queryParamsFromForm();
+      const res = await fetch("/api/query/schedule/update_params", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ params }),
+      });
+      const data = await res.json();
+      if (data.error) {
+        setStatus(`Apply criteria error: ${data.error}`, "error");
+        return;
+      }
+      state.nextQuery = data;
+      state.criteriaBaseline = normalizeCriteria(data.params || params);
+      updateCriteriaApplyButton();
+      setStatus("Next query criteria updated.", "ok");
     }
 
     async function showResult(id) {
@@ -1153,7 +1224,8 @@
       state.past = data.past_queries || [];
       state.upcoming = data.upcoming_queries || [];
       state.nextQuery = data.next_query || state.upcoming[state.upcoming.length - 1] || null;
-      const d = data.default_params || {};
+      const d = state.nextQuery?.params || data.default_params || {};
+      state.criteriaBaseline = normalizeCriteria(d);
       document.getElementById("origin").value = normalizeAirportCsv(d.origin_airport || "");
       document.getElementById("destination").value = normalizeAirportCsv(d.destination_airport || "");
       document.getElementById("startDate").value = d.start_date || "";
@@ -1165,6 +1237,7 @@
       }
       renderPast();
       renderUpcoming();
+      updateCriteriaApplyButton();
       if (state.past.length) {
         state.selectedId = state.past[0].id;
         state.selectedPrograms = [];
@@ -1198,6 +1271,10 @@
       state.selectedPrograms = [];
       state.availablePrograms = [];
       renderCurrentSelectedResult();
+    });
+
+    document.getElementById("applyCriteriaBtn").addEventListener("click", async () => {
+      await applyCriteriaToNextQuery();
     });
 
     document.getElementById("programFilterToggle").addEventListener("click", (e) => {
@@ -1236,6 +1313,7 @@
       window.lucide.createIcons();
     }
 
+    attachCriteriaChangeWatchers();
     loadState();
   </script>
 </body>

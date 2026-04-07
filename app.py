@@ -344,6 +344,34 @@ class Handler(BaseHTTPRequestHandler):
                 self._send_json({"error": str(exc)}, status=400)
                 return
 
+        if self.path == "/api/query/schedule/update_params":
+            try:
+                payload = self._read_json_body()
+                params = payload.get("params")
+                if not isinstance(params, dict):
+                    self._send_json({"error": "Missing params object"}, status=400)
+                    return
+
+                data = read_store()
+                current = normalize_next_query(data)
+                if not current:
+                    self._send_json({"error": "No next query configured"}, status=404)
+                    return
+
+                for idx, q in enumerate(data.get("upcoming_queries", [])):
+                    if q.get("id") == current.get("id"):
+                        data["upcoming_queries"][idx]["params"] = params
+                        data["upcoming_queries"][idx]["updated_at"] = utc_now()
+                        current = data["upcoming_queries"][idx]
+                        break
+
+                write_store(data)
+                self._send_json(current)
+                return
+            except Exception as exc:
+                self._send_json({"error": str(exc)}, status=400)
+                return
+
         self.send_error(HTTPStatus.NOT_FOUND, "Not Found")
 
 
