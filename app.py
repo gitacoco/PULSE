@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import smtplib
 import json
 import os
 import urllib.error
@@ -6,6 +7,7 @@ import urllib.parse
 import urllib.request
 import uuid
 from datetime import datetime, timedelta, timezone
+from email.message import EmailMessage
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -197,6 +199,142 @@ def extract_hits(payload: dict, max_mileage: int) -> list:
     return hits
 
 
+def _env_bool(name: str, default: bool) -> bool:
+    raw = os.environ.get(name)
+    if raw is None:
+        return default
+    return raw.strip().lower() in {"1", "true", "yes", "on"}
+
+
+def send_alert_email(record: dict) -> None:
+    smtp_host = (os.environ.get("SMTP_HOST") or "").strip()
+    smtp_port_raw = (os.environ.get("SMTP_PORT") or "").strip()
+    smtp_user = (os.environ.get("SMTP_USER") or "").strip()
+    smtp_pass = (os.environ.get("SMTP_PASS") or "").strip()
+    to_email = (os.environ.get("ALERT_TO_EMAIL") or "").strip()
+    from_email = (os.environ.get("ALERT_FROM_EMAIL") or smtp_user).strip()
+
+    if not smtp_host or not smtp_port_raw or not to_email or not from_email:
+        raise RuntimeError("Missing SMTP/alert env vars")
+
+    smtp_port = int(smtp_port_raw)
+    use_ssl = _env_bool("SMTP_SSL", smtp_port == 465)
+    use_tls = _env_bool("SMTP_TLS", smtp_port == 587)
+
+    def human_time(raw: str) -> str:
+        if not raw:
+            return "-"
+        try:
+            dt = datetime.fromisoformat(raw)
+            return dt.astimezone().strftime("%Y-%m-%d %H:%M")
+        except Exception:
+            return raw
+
+    def esc(value) -> str:
+        text = "" if value is None else str(value)
+        return (
+            text.replace("&", "&amp;")
+            .replace("<", "&lt;")
+            .replace(">", "&gt;")
+            .replace('"', "&quot;")
+            .replace("'", "&#39;")
+        )
+
+    hits = record.get("hits", [])
+    subject = f"RewardsTicket Alert: {record.get('total_hits', 0)} matching flights"
+    created_human = human_time(record.get("created_at", ""))
+    lines = [
+        f"Created: {created_human}",
+        f"Total returned: {record.get('total_returned', 0)}",
+        f"Matching hits: {record.get('total_hits', 0)}",
+        "",
+        "Top matches:",
+    ]
+    html_rows = []
+    for idx, h in enumerate(hits[:20], 1):
+        date_value = h.get("date", "-")
+        program = h.get("source", "-")
+        airlines_or_fn = h.get("airlines", "-") or h.get("flight_numbers", "-")
+        origin = h.get("origin", "-")
+        destination = h.get("destination", "-")
+        mileage = h.get("mileage", "-")
+        seats = h.get("seats", "-")
+        lines.append(
+            f"{idx}. {date_value} | {program} | {airlines_or_fn} | {origin} -> {destination} | {mileage} | seats={seats}"
+        )
+        html_rows.append(
+            "<tr>"
+            f"<td style='padding:8px;border-bottom:1px solid #e5e7eb;'>{esc(date_value)}</td>"
+            f"<td style='padding:8px;border-bottom:1px solid #e5e7eb;'>{esc(program)}</td>"
+            f"<td style='padding:8px;border-bottom:1px solid #e5e7eb;'>{esc(airlines_or_fn)}</td>"
+            f"<td style='padding:8px;border-bottom:1px solid #e5e7eb;'>{esc(origin)}</td>"
+            f"<td style='padding:8px;border-bottom:1px solid #e5e7eb;'>{esc(destination)}</td>"
+            f"<td style='padding:8px;border-bottom:1px solid #e5e7eb;text-align:right;'>{esc(mileage)}</td>"
+            f"<td style='padding:8px;border-bottom:1px solid #e5e7eb;text-align:right;'>{esc(seats)}</td>"
+            "</tr>"
+        )
+
+    msg = EmailMessage()
+    msg["Subject"] = subject
+    msg["From"] = from_email
+    msg["To"] = to_email
+    msg.set_content("\n".join(lines))
+    msg.add_alternative(
+        f"""\
+<html>
+  <body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#111827;background:#f9fafb;padding:20px;">
+    <div style="max-width:780px;margin:0 auto;background:#ffffff;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden;">
+      <div style="padding:14px 16px;border-bottom:1px solid #e5e7eb;background:#111827;color:#ffffff;">
+        <div style="font-size:16px;font-weight:600;">RewardsTicket Alert</div>
+        <div style="font-size:12px;opacity:0.85;margin-top:4px;">{esc(record.get('total_hits', 0))} matching flights found</div>
+      </div>
+      <div style="padding:14px 16px;">
+        <div style="font-size:13px;color:#4b5563;margin-bottom:10px;">
+          <strong>Created:</strong> {esc(created_human)}<br/>
+          <strong>Total returned:</strong> {esc(record.get('total_returned', 0))}<br/>
+          <strong>Matching hits:</strong> {esc(record.get('total_hits', 0))}
+        </div>
+        <table style="width:100%;border-collapse:collapse;font-size:13px;">
+          <thead>
+            <tr style="background:#f3f4f6;color:#374151;text-align:left;">
+              <th style="padding:8px;">Date</th>
+              <th style="padding:8px;">Program</th>
+              <th style="padding:8px;">Airlines</th>
+              <th style="padding:8px;">From</th>
+              <th style="padding:8px;">To</th>
+              <th style="padding:8px;text-align:right;">Mileage</th>
+              <th style="padding:8px;text-align:right;">Seats</th>
+            </tr>
+          </thead>
+          <tbody>
+            {''.join(html_rows) if html_rows else "<tr><td colspan='7' style='padding:10px;color:#6b7280;'>No rows</td></tr>"}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </body>
+</html>
+""",
+        subtype="html",
+    )
+
+    if use_ssl:
+        with smtplib.SMTP_SSL(smtp_host, smtp_port, timeout=20) as server:
+            if smtp_user and smtp_pass:
+                server.login(smtp_user, smtp_pass)
+            server.send_message(msg)
+        return
+
+    with smtplib.SMTP(smtp_host, smtp_port, timeout=20) as server:
+        server.ehlo()
+        if use_tls:
+            server.starttls()
+            server.ehlo()
+        if smtp_user and smtp_pass:
+            server.login(smtp_user, smtp_pass)
+        server.send_message(msg)
+
+
 def default_params() -> dict:
     today = datetime.now(timezone.utc).date()
     end = today + timedelta(days=14)
@@ -288,6 +426,20 @@ class Handler(BaseHTTPRequestHandler):
                 data = read_store()
                 data["past_queries"].insert(0, record)
                 write_store(data)
+
+                email_sent = False
+                email_error = None
+                if record["total_hits"] > 0:
+                    try:
+                        send_alert_email(record)
+                        email_sent = True
+                    except Exception as exc:
+                        email_error = str(exc)
+
+                if email_sent:
+                    record["email_sent"] = True
+                if email_error:
+                    record["email_error"] = email_error
                 self._send_json(record)
                 return
             except Exception as exc:
