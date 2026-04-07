@@ -279,6 +279,12 @@
       gap: 8px;
     }
 
+    .next-query-spacer {
+      margin-left: auto;
+      width: 1px;
+      height: 1px;
+    }
+
     .next-query-label {
       margin: 0;
       font-size: 12px;
@@ -289,12 +295,6 @@
 
     .next-query-input {
       width: 56px;
-    }
-
-    .next-query-sep {
-      color: var(--muted);
-      font-size: 12px;
-      margin-left: auto;
     }
 
     .inline-apply {
@@ -401,6 +401,12 @@
     .form-grid {
       display: grid;
       grid-template-columns: 1fr;
+      gap: 8px;
+    }
+
+    .form-row-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
       gap: 8px;
     }
 
@@ -744,24 +750,28 @@
                   <label>Destination Airports</label>
                   <input id="destination" required />
                 </div>
-                <div>
-                  <label>Start Date</label>
-                  <input id="startDate" type="date" required />
+                <div class="form-row-2">
+                  <div>
+                    <label>Start Date</label>
+                    <input id="startDate" type="date" required />
+                  </div>
+                  <div>
+                    <label>End Date</label>
+                    <input id="endDate" type="date" required />
+                  </div>
                 </div>
-                <div>
-                  <label>End Date</label>
-                  <input id="endDate" type="date" required />
-                </div>
-                <div>
-                  <label>Cabin</label>
-                  <input id="cabin" value="business" />
-                </div>
-                <div>
-                  <label>Max Mileage</label>
-                  <input id="maxMileage" type="number" value="100000" />
+                <div class="form-row-2">
+                  <div>
+                    <label>Cabin</label>
+                    <input id="cabin" value="Business" />
+                  </div>
+                  <div>
+                    <label>Max Mileage</label>
+                    <input id="maxMileage" type="number" value="100000" />
+                  </div>
                 </div>
                 <div class="toggle-row">
-                  <span class="toggle-label">Only Direct Flights</span>
+                  <span class="toggle-label">Direct Flights Only</span>
                   <label class="switch" for="onlyDirectFlights">
                     <input id="onlyDirectFlights" type="checkbox" checked />
                     <span class="switch-slider"></span>
@@ -870,16 +880,23 @@
 
     function queryParamsFromForm() {
       const onlyDirect = document.getElementById("onlyDirectFlights");
+      const cabinValue = (document.getElementById("cabin").value || "").trim();
       return {
         origin_airport: serializeAirportCsv(document.getElementById("origin").value),
         destination_airport: serializeAirportCsv(document.getElementById("destination").value),
         start_date: document.getElementById("startDate").value,
         end_date: document.getElementById("endDate").value,
-        cabin: document.getElementById("cabin").value.trim() || "business",
+        cabin: cabinValue ? cabinValue.toLowerCase() : "business",
         only_direct_flights: onlyDirect && onlyDirect.checked ? "true" : "false",
         order_by: "lowest_mileage",
         take: "200",
       };
+    }
+
+    function formatCabinDisplay(value) {
+      const raw = String(value || "").trim();
+      if (!raw) return "Business";
+      return raw.charAt(0).toUpperCase() + raw.slice(1).toLowerCase();
     }
 
     function parseBooleanish(value, fallback = false) {
@@ -1062,7 +1079,7 @@
             <span class="next-query-label">Running every</span>
             <input class="next-query-input" id="nextQueryInterval" type="number" value="${intervalValue}" min="1" />
             <span class="next-query-label">minutes</span>
-            <span class="next-query-sep">|</span>
+            <span class="next-query-spacer" aria-hidden="true"></span>
             <button id="confirmNextQueryBtn" class="text-btn inline-apply" type="button" disabled>Re-apply</button>
           </div>
         </div>
@@ -1141,7 +1158,7 @@
       document.getElementById("destination").value = normalizeAirportCsv(d.destination_airport || "");
       document.getElementById("startDate").value = d.start_date || "";
       document.getElementById("endDate").value = d.end_date || "";
-      document.getElementById("cabin").value = d.cabin || "business";
+      document.getElementById("cabin").value = formatCabinDisplay(d.cabin || "business");
       const onlyDirect = document.getElementById("onlyDirectFlights");
       if (onlyDirect) {
         onlyDirect.checked = parseBooleanish(d.only_direct_flights, true);
