@@ -274,29 +274,49 @@
     }
 
     .next-query-control {
-      display: grid;
-      grid-template-columns: auto 84px auto;
-      gap: 8px;
+      display: flex;
       align-items: center;
+      gap: 8px;
     }
 
     .next-query-label {
       margin: 0;
-      font-size: 11px;
+      font-size: 12px;
       color: var(--muted);
-      font-weight: 500;
+      font-weight: 400;
       white-space: nowrap;
     }
 
     .next-query-input {
-      width: 84px;
+      width: 56px;
     }
 
-    .inline-confirm {
+    .next-query-sep {
+      color: var(--muted);
+      font-size: 12px;
+      margin-left: auto;
+    }
+
+    .inline-apply {
       width: auto;
-      min-width: 78px;
-      padding: 7px 10px;
+      min-width: 0;
+      padding: 0;
       margin-top: 0;
+    }
+
+    .text-btn {
+      border: 0;
+      background: transparent;
+      color: #111111;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      line-height: 1;
+    }
+
+    .text-btn:disabled {
+      color: var(--muted);
+      cursor: default;
     }
 
     .query-item.selected .query-check {
@@ -353,7 +373,7 @@
       border: 1px solid var(--line-strong);
       border-radius: 4px;
       cursor: pointer;
-      font-weight: 600;
+      font-weight: 500;
       font-size: 12px;
       background: #fff;
       color: var(--text);
@@ -375,13 +395,70 @@
       background: #C8D0DC;
       color: #111111;
       border-radius: 4px;
-      font-weight: 600;
+      font-weight: 500;
     }
 
     .form-grid {
       display: grid;
       grid-template-columns: 1fr;
       gap: 8px;
+    }
+
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 4px 0;
+    }
+
+    .toggle-label {
+      margin: 0;
+      font-size: 11px;
+      color: var(--muted);
+      font-weight: 500;
+    }
+
+    .switch {
+      position: relative;
+      width: 34px;
+      height: 20px;
+      flex: 0 0 auto;
+    }
+
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+      position: absolute;
+    }
+
+    .switch-slider {
+      position: absolute;
+      inset: 0;
+      border-radius: 999px;
+      background: #d1d5db;
+      transition: background-color 0.12s ease;
+    }
+
+    .switch-slider::before {
+      content: "";
+      position: absolute;
+      width: 14px;
+      height: 14px;
+      left: 3px;
+      top: 3px;
+      border-radius: 999px;
+      background: #fff;
+      transition: transform 0.12s ease;
+    }
+
+    .switch input:checked + .switch-slider {
+      background: #111111;
+    }
+
+    .switch input:checked + .switch-slider::before {
+      transform: translateX(14px);
     }
 
     label {
@@ -463,7 +540,7 @@
 
     .result-columns {
       display: grid;
-      grid-template-columns: 1.1fr 0.8fr 0.55fr 0.8fr 0.8fr 0.8fr 0.6fr;
+      grid-template-columns: 1.1fr 0.8fr 0.8fr 0.8fr 0.8fr 0.8fr 0.6fr;
       gap: 8px;
       padding: 8px 4px;
       margin-bottom: 8px;
@@ -486,7 +563,7 @@
       background: transparent;
       color: inherit;
       font: inherit;
-      font-weight: 600;
+      font-weight: 500;
       text-transform: inherit;
       letter-spacing: inherit;
       padding: 0;
@@ -577,7 +654,7 @@
 
     .flight-row {
       display: grid;
-      grid-template-columns: 1.1fr 0.8fr 0.55fr 0.8fr 0.8fr 0.8fr 0.6fr;
+      grid-template-columns: 1.1fr 0.8fr 0.8fr 0.8fr 0.8fr 0.8fr 0.6fr;
       gap: 8px;
       align-items: center;
       font-size: 13px;
@@ -683,6 +760,13 @@
                   <label>Max Mileage</label>
                   <input id="maxMileage" type="number" value="100000" />
                 </div>
+                <div class="toggle-row">
+                  <span class="toggle-label">Only Direct Flights</span>
+                  <label class="switch" for="onlyDirectFlights">
+                    <input id="onlyDirectFlights" type="checkbox" checked />
+                    <span class="switch-slider"></span>
+                  </label>
+                </div>
               </div>
               <button class="primary-btn" type="submit">Off-cycle Run</button>
             </form>
@@ -785,16 +869,27 @@
     }
 
     function queryParamsFromForm() {
+      const onlyDirect = document.getElementById("onlyDirectFlights");
       return {
         origin_airport: serializeAirportCsv(document.getElementById("origin").value),
         destination_airport: serializeAirportCsv(document.getElementById("destination").value),
         start_date: document.getElementById("startDate").value,
         end_date: document.getElementById("endDate").value,
         cabin: document.getElementById("cabin").value.trim() || "business",
-        only_direct_flights: "true",
+        only_direct_flights: onlyDirect && onlyDirect.checked ? "true" : "false",
         order_by: "lowest_mileage",
         take: "200",
       };
+    }
+
+    function parseBooleanish(value, fallback = false) {
+      if (typeof value === "boolean") return value;
+      if (typeof value === "string") {
+        const v = value.trim().toLowerCase();
+        if (v === "true") return true;
+        if (v === "false") return false;
+      }
+      return fallback;
     }
 
     function setStatus(text, type) {
@@ -964,9 +1059,11 @@
             <span class="next-query-time">${nextRunText}</span>
           </div>
           <div class="next-query-control">
-            <label class="next-query-label" for="nextQueryInterval">Interval Minutes</label>
+            <span class="next-query-label">Running every</span>
             <input class="next-query-input" id="nextQueryInterval" type="number" value="${intervalValue}" min="1" />
-            <button id="confirmNextQueryBtn" class="secondary-btn inline-confirm" type="button">Re-apply</button>
+            <span class="next-query-label">minutes</span>
+            <span class="next-query-sep">|</span>
+            <button id="confirmNextQueryBtn" class="text-btn inline-apply" type="button" disabled>Re-apply</button>
           </div>
         </div>
       `;
@@ -974,10 +1071,23 @@
       const confirmBtn = document.getElementById("confirmNextQueryBtn");
       const intervalInput = document.getElementById("nextQueryInterval");
       if (confirmBtn && intervalInput) {
+        const baselineInterval = Number(intervalValue);
+        const syncApplyState = () => {
+          const val = Number(intervalInput.value);
+          const valid = Number.isFinite(val) && val > 0;
+          confirmBtn.disabled = !(valid && val !== baselineInterval);
+        };
+        intervalInput.addEventListener("input", syncApplyState);
+        intervalInput.addEventListener("change", syncApplyState);
+        syncApplyState();
+
         confirmBtn.addEventListener("click", async () => {
           const val = Number(intervalInput.value || 60);
           if (!Number.isFinite(val) || val <= 0) {
             setStatus("Interval must be greater than 0.", "error");
+            return;
+          }
+          if (val === baselineInterval) {
             return;
           }
           await upsertNextQuery(val);
@@ -1032,6 +1142,10 @@
       document.getElementById("startDate").value = d.start_date || "";
       document.getElementById("endDate").value = d.end_date || "";
       document.getElementById("cabin").value = d.cabin || "business";
+      const onlyDirect = document.getElementById("onlyDirectFlights");
+      if (onlyDirect) {
+        onlyDirect.checked = parseBooleanish(d.only_direct_flights, true);
+      }
       renderPast();
       renderUpcoming();
       if (state.past.length) {
