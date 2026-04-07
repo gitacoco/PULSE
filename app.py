@@ -69,11 +69,82 @@ def build_search_url(params: dict) -> str:
     return f"https://seats.aero/partnerapi/search?{encoded}"
 
 
+def _extract_airlines(row: dict) -> str:
+    for key in [
+        "JDirectAirlinesRaw",
+        "JDirectAirlines",
+        "JAirlinesRaw",
+        "JAirlines",
+        "WDirectAirlinesRaw",
+        "WDirectAirlines",
+        "WAirlinesRaw",
+        "WAirlines",
+        "YDirectAirlinesRaw",
+        "YDirectAirlines",
+        "YAirlinesRaw",
+        "YAirlines",
+    ]:
+        value = row.get(key)
+        if isinstance(value, str) and value.strip():
+            return value.strip()
+    return ""
+
+
+def _extract_flight_numbers(row: dict) -> str:
+    trips = row.get("AvailabilityTrips")
+    if not isinstance(trips, list) or not trips:
+        return ""
+
+    found = []
+
+    def walk(node):
+        if isinstance(node, dict):
+            flight_no = (
+                node.get("FlightNumber")
+                or node.get("flightNumber")
+                or node.get("flight_number")
+                or node.get("flightNo")
+                or node.get("flight_no")
+            )
+            carrier = (
+                node.get("MarketingAirline")
+                or node.get("OperatingAirline")
+                or node.get("Airline")
+                or node.get("airline")
+                or node.get("Carrier")
+                or node.get("carrier")
+            )
+            if flight_no:
+                if carrier and isinstance(carrier, str):
+                    found.append(f"{carrier}{flight_no}")
+                else:
+                    found.append(str(flight_no))
+            for v in node.values():
+                walk(v)
+        elif isinstance(node, list):
+            for item in node:
+                walk(item)
+
+    walk(trips)
+    uniq = []
+    seen = set()
+    for item in found:
+        norm = item.strip()
+        if norm and norm not in seen:
+            seen.add(norm)
+            uniq.append(norm)
+    return ", ".join(uniq[:4])
+
+
 def run_seats_query(params: dict) -> dict:
     api_key = (os.environ.get("SEATS_API_KEY") or "").strip()
     if not api_key:
         raise RuntimeError("SEATS_API_KEY is missing. Put it in .env first.")
 
+    # Enable trip-level fields so we can surface flight numbers when available.
+    params = dict(params)
+    params.setdefault("include_trips", "true")
+    params.setdefault("minify_trips", "true")
     url = build_search_url(params)
     req = urllib.request.Request(
         url,
@@ -109,12 +180,16 @@ def extract_hits(payload: dict, max_mileage: int) -> list:
         if mileage > max_mileage:
             continue
         route = row.get("Route") or {}
+        airlines = _extract_airlines(row)
+        flight_numbers = _extract_flight_numbers(row)
         hits.append(
             {
                 "date": row.get("Date"),
                 "origin": route.get("OriginAirport"),
                 "destination": route.get("DestinationAirport"),
                 "source": row.get("Source") or route.get("Source"),
+                "airlines": airlines,
+                "flight_numbers": flight_numbers,
                 "mileage": mileage,
                 "seats": row.get("JRemainingSeats"),
             }

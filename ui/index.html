@@ -46,6 +46,12 @@
       border-bottom: 1px solid var(--line);
     }
 
+    /* Specific override: main.shell > header.hero */
+    main.shell > header.hero {
+      padding-left: 14px;
+      padding-right: 14px;
+    }
+
     .title {
       margin: 0;
       font-size: 28px;
@@ -59,7 +65,7 @@
 
     .layout {
       display: grid;
-      grid-template-columns: 1fr 4fr;
+      grid-template-columns: 320px minmax(0, 1fr);
       flex: 1;
       min-height: 0;
       align-items: stretch;
@@ -68,6 +74,7 @@
     .left-column {
       display: grid;
       grid-template-rows: auto auto 1fr;
+      width: 320px;
       border-right: 1px solid var(--line);
       min-height: 100%;
     }
@@ -118,8 +125,8 @@
     }
 
     .collapse-btn {
-      width: 16px;
-      height: 16px;
+      width: 20px;
+      height: 20px;
       display: inline-flex;
       align-items: center;
       justify-content: center;
@@ -136,18 +143,69 @@
       color: var(--text);
     }
 
-    .collapse-btn .chev {
-      display: inline-block;
+    .collapse-btn .collapse-icon {
+      width: 14px;
+      height: 14px;
       transition: transform 0.12s ease;
       transform: rotate(0deg);
     }
 
-    .collapse-btn[aria-expanded="false"] .chev {
+    .collapse-btn[aria-expanded="false"] .collapse-icon {
       transform: rotate(-90deg);
     }
 
     .panel-body {
       padding: 10px;
+    }
+
+    /* Element 1: Past Queries header */
+    main.shell > section.layout > aside.left-column > section.panel:first-child > div.panel-header {
+      padding-left: 14px;
+      padding-right: 14px;
+    }
+
+    /* Element 2: Past Queries body */
+    main.shell > section.layout > aside.left-column > section.panel:first-child > div.panel-body {
+      padding-top: 12px;
+      padding-bottom: 12px;
+    }
+
+    /* Element 3: Next Query header */
+    section#upcomingPanel > div.panel-header {
+      padding-left: 14px;
+      padding-right: 14px;
+    }
+
+    /* Element 4: Query Criteria header */
+    section#criteriaPanel > div.panel-header {
+      padding-left: 14px;
+      padding-right: 14px;
+    }
+
+    /* Element 5: Query Criteria body */
+    div#criteriaBody {
+      padding-left: 14px;
+      padding-right: 14px;
+      padding-top: 14px;
+      padding-bottom: 14px;
+    }
+
+    /* Specific override: Upcoming body left/right padding */
+    div#upcomingBody {
+      padding-left: 14px;
+      padding-right: 14px;
+    }
+
+    /* Element 6: Results panel body */
+    main.shell > section.layout > section.panel > div.panel-body {
+      padding-left: 14px;
+      padding-right: 14px;
+    }
+
+    /* Element 7: Results panel header */
+    main.shell > section.layout > section.panel > div.panel-header {
+      padding-left: 14px;
+      padding-right: 14px;
     }
 
     .list {
@@ -157,12 +215,14 @@
     }
 
     .query-item {
-      border-bottom: 1px solid var(--line);
-      padding: 8px 4px;
+      border-bottom: 0;
+      padding: 8px 32px 8px 4px;
       background: #fff;
       cursor: pointer;
       transition: background-color 0.12s ease;
       position: relative;
+      border-radius: 4px;
+      margin-bottom: 6px;
     }
 
     .query-item.selected {
@@ -171,14 +231,6 @@
 
     .query-item:hover {
       background: #f8f8f8;
-    }
-
-    #pastList .query-item:last-child {
-      border-bottom: 0;
-    }
-
-    #upcomingList .query-item:last-child {
-      border-bottom: 0;
     }
 
     .query-item.selected .query-meta {
@@ -191,14 +243,15 @@
     }
 
     .query-check {
-      width: 14px;
-      height: 14px;
+      width: 16px;
+      height: 16px;
       border-radius: 999px;
       border: 1.5px solid var(--line-strong);
       background: #fff;
-      flex: 0 0 auto;
-      margin-left: auto;
-      position: relative;
+      position: absolute;
+      right: 8px;
+      top: 50%;
+      transform: translateY(-50%);
     }
 
     .next-query-wrap {
@@ -212,8 +265,7 @@
       align-items: center;
       font-size: 12px;
       color: var(--muted);
-      border-bottom: 1px solid var(--line);
-      padding-bottom: 8px;
+      padding-bottom: 0;
     }
 
     .next-query-time {
@@ -223,9 +275,21 @@
 
     .next-query-control {
       display: grid;
-      grid-template-columns: 1fr auto;
+      grid-template-columns: auto 84px auto;
       gap: 8px;
-      align-items: end;
+      align-items: center;
+    }
+
+    .next-query-label {
+      margin: 0;
+      font-size: 11px;
+      color: var(--muted);
+      font-weight: 500;
+      white-space: nowrap;
+    }
+
+    .next-query-input {
+      width: 84px;
     }
 
     .inline-confirm {
@@ -241,16 +305,20 @@
     }
 
     .query-item.selected .query-check::after {
-      content: "";
+      content: "✓";
       position: absolute;
-      inset: 3px;
-      border-radius: 999px;
-      background: #fff;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -58%);
+      font-size: 11px;
+      line-height: 1;
+      color: #ffffff;
+      font-weight: 700;
     }
 
     .query-meta {
       display: flex;
-      justify-content: space-between;
+      justify-content: flex-start;
       font-size: 11px;
       color: var(--muted);
       margin-bottom: 6px;
@@ -395,10 +463,10 @@
 
     .result-columns {
       display: grid;
-      grid-template-columns: 1.2fr 0.9fr 0.8fr 0.8fr 0.9fr 0.7fr;
+      grid-template-columns: 1.1fr 0.8fr 0.55fr 0.8fr 0.8fr 0.8fr 0.6fr;
       gap: 8px;
       padding: 8px 4px;
-      margin-bottom: 10px;
+      margin-bottom: 8px;
       font-size: 10px;
       font-weight: 600;
       color: var(--muted);
@@ -425,14 +493,9 @@
       cursor: pointer;
     }
 
-    .program-filter-indicator {
-      font-size: 10px;
-      line-height: 1;
-      transition: transform 0.12s ease;
-    }
-
-    .program-filter-toggle[aria-expanded="true"] .program-filter-indicator {
-      transform: rotate(180deg);
+    .program-filter-icon {
+      width: 14px;
+      height: 14px;
     }
 
     .program-filter-menu {
@@ -457,13 +520,13 @@
 
     .program-filter-item {
       display: grid;
-      grid-template-columns: 16px 1fr;
+      grid-template-columns: 18px 1fr;
       align-items: center;
       column-gap: 8px;
-      min-height: 24px;
+      min-height: 26px;
       font-size: 11px;
       color: var(--text);
-      padding: 2px 0;
+      padding: 3px 0;
       text-transform: none;
       letter-spacing: 0;
       font-weight: 500;
@@ -475,6 +538,8 @@
       height: 14px;
       margin: 0;
       padding: 0;
+      justify-self: center;
+      align-self: center;
       border: 1px solid var(--line-strong);
       border-radius: 2px;
       background: #fff;
@@ -482,6 +547,7 @@
     }
 
     .program-filter-item span {
+      display: block;
       line-height: 1.2;
     }
 
@@ -511,7 +577,7 @@
 
     .flight-row {
       display: grid;
-      grid-template-columns: 1.2fr 0.9fr 0.8fr 0.8fr 0.9fr 0.7fr;
+      grid-template-columns: 1.1fr 0.8fr 0.55fr 0.8fr 0.8fr 0.8fr 0.6fr;
       gap: 8px;
       align-items: center;
       font-size: 13px;
@@ -531,41 +597,12 @@
       margin-top: 2px;
     }
 
-    @media (max-width: 980px) {
-      .result-columns,
-      .flight-row {
-        grid-template-columns: 1fr 1fr;
-      }
-    }
-
     .empty {
       border: 1px dashed var(--line-strong);
       background: #fff;
       padding: 10px;
       color: var(--muted);
       font-size: 12px;
-    }
-
-    @media (max-width: 1200px) {
-      .layout {
-        grid-template-columns: 1fr;
-      }
-
-      .left-column {
-        grid-template-columns: 1fr 1fr;
-        border-right: 0;
-        border-bottom: 1px solid var(--line);
-      }
-
-      .left-column .panel:last-child {
-        grid-column: 1 / -1;
-      }
-    }
-
-    @media (max-width: 800px) {
-      .left-column {
-        grid-template-columns: 1fr;
-      }
     }
 
     .is-collapsed {
@@ -600,7 +637,7 @@
               <h2 class="panel-title">Next Query</h2>
             </div>
             <button class="collapse-btn" type="button" data-toggle-target="upcomingBody" aria-expanded="true" aria-label="Toggle Upcoming Queries">
-              <span class="chev">▾</span>
+              <i data-lucide="chevron-down" class="collapse-icon" aria-hidden="true"></i>
             </button>
           </div>
           <div class="panel-body" id="upcomingBody">
@@ -616,7 +653,7 @@
               <h2 class="panel-title">Query Criteria</h2>
             </div>
             <button class="collapse-btn" type="button" data-toggle-target="criteriaBody" aria-expanded="true" aria-label="Toggle Query Criteria">
-              <span class="chev">▾</span>
+              <i data-lucide="chevron-down" class="collapse-icon" aria-hidden="true"></i>
             </button>
           </div>
           <div class="panel-body" id="criteriaBody">
@@ -658,7 +695,6 @@
           <div class="panel-header-left">
             <h2 class="panel-title">Results of Selected Query</h2>
           </div>
-          <span id="resultMeta" class="panel-sub">Run a query or select one.</span>
         </div>
         <div class="panel-body">
           <div class="result-columns">
@@ -666,10 +702,11 @@
             <div class="program-header-cell">
               <button id="programFilterToggle" class="program-filter-toggle" type="button" aria-haspopup="true" aria-expanded="false">
                 <span>Program</span>
-                <span class="program-filter-indicator">▾</span>
+                <i data-lucide="list-filter" class="program-filter-icon" aria-hidden="true"></i>
               </button>
               <div id="programFilterMenu" class="program-filter-menu"></div>
             </div>
+            <div>Airlines</div>
             <div>Origin</div>
             <div>Destination</div>
             <div>Mileage</div>
@@ -683,7 +720,7 @@
     </section>
   </main>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
-
+  <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js"></script>
   <script>
     const state = {
       past: [],
@@ -720,6 +757,21 @@
       if (!raw) return "-";
       const d = new Date(raw);
       return Number.isNaN(d.getTime()) ? raw : d.toLocaleString();
+    }
+
+    function formatNextRun(raw) {
+      if (!raw) return "-";
+      const d = new Date(raw);
+      if (Number.isNaN(d.getTime())) return raw;
+      const now = new Date();
+      const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const startOfTarget = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+      const dayDiff = Math.round((startOfTarget - startOfToday) / 86400000);
+      const hh = String(d.getHours()).padStart(2, "0");
+      const mm = String(d.getMinutes()).padStart(2, "0");
+      if (dayDiff === 0) return `Today ${hh}:${mm}`;
+      if (dayDiff === 1) return `Tomorrow ${hh}:${mm}`;
+      return `${String(d.getMonth() + 1).padStart(2, "0")}/${String(d.getDate()).padStart(2, "0")} ${hh}:${mm}`;
     }
 
     function formatFlightDateTime(raw) {
@@ -833,10 +885,8 @@
 
     function renderFlightCards(record) {
       const flightList = document.getElementById("flightList");
-      const resultMeta = document.getElementById("resultMeta");
 
       if (!record) {
-        resultMeta.textContent = "Run a query or select one.";
         state.availablePrograms = [];
         state.selectedPrograms = [];
         renderProgramFilterMenu();
@@ -853,8 +903,6 @@
         return state.selectedPrograms.includes(source);
       });
 
-      resultMeta.textContent = `Created ${formatDate(record.created_at)} · ${filteredHits.length}/${record.total_hits} hits`;
-
       if (!filteredHits.length) {
         flightList.innerHTML = '<div class="empty">No matching flight under your mileage limit.</div>';
         return;
@@ -866,6 +914,7 @@
               <div class="flight-row">
                 <div class="cell-muted">${formatFlightDateTime(h.date)}</div>
                 <div>${h.source || "-"}</div>
+                <div>${h.airlines || h.flight_numbers || "-"}</div>
                 <div class="cell-strong">${h.origin || "-"}</div>
                 <div class="cell-strong">${h.destination || "-"}</div>
                 <div>${numberWithComma(h.mileage)}</div>
@@ -889,11 +938,11 @@
             <div class="query-item ${selected}" data-id="${q.id}">
               <div class="query-meta">
                 <span>${formatDate(q.created_at)}</span>
-                <span class="query-check" aria-hidden="true"></span>
               </div>
               <div class="chips">
                 <span class="chip hit">${q.total_hits} hits</span>
               </div>
+              <span class="query-check" aria-hidden="true"></span>
             </div>
           `;
         })
@@ -907,7 +956,7 @@
       const root = document.getElementById("upcomingList");
       const q = state.nextQuery;
       const intervalValue = q?.interval_minutes ?? 60;
-      const nextRunText = q?.next_run_at ? formatDate(q.next_run_at) : "-";
+      const nextRunText = q?.next_run_at ? formatNextRun(q.next_run_at) : "-";
       root.innerHTML = `
         <div class="next-query-wrap">
           <div class="next-query-row">
@@ -915,10 +964,8 @@
             <span class="next-query-time">${nextRunText}</span>
           </div>
           <div class="next-query-control">
-            <div>
-              <label>Interval Minutes</label>
-              <input id="nextQueryInterval" type="number" value="${intervalValue}" min="1" />
-            </div>
+            <label class="next-query-label" for="nextQueryInterval">Interval Minutes</label>
+            <input class="next-query-input" id="nextQueryInterval" type="number" value="${intervalValue}" min="1" />
             <button id="confirmNextQueryBtn" class="secondary-btn inline-confirm" type="button">Re-apply</button>
           </div>
         </div>
@@ -1053,6 +1100,10 @@
         btn.setAttribute("aria-expanded", willCollapse ? "false" : "true");
       });
     });
+
+    if (window.lucide && typeof window.lucide.createIcons === "function") {
+      window.lucide.createIcons();
+    }
 
     loadState();
   </script>
