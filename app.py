@@ -46,7 +46,7 @@ def ensure_store() -> None:
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     if STORE_PATH.exists():
         return
-    initial = {"past_queries": [], "upcoming_queries": []}
+    initial = {"past_queries": [], "upcoming_queries": [], "meta": {}}
     STORE_PATH.write_text(json.dumps(initial, indent=2), encoding="utf-8")
 
 
@@ -56,6 +56,7 @@ def _read_store_unlocked() -> dict:
     data = json.loads(raw)
     data.setdefault("past_queries", [])
     data.setdefault("upcoming_queries", [])
+    data.setdefault("meta", {})
     return data
 
 
@@ -191,15 +192,15 @@ def run_seats_query(params: dict) -> dict:
                     else None
                 )
                 if limit is not None and remaining is not None:
-                    set_last_rate_limit(
-                        {
-                            "limit": limit,
-                            "remaining": remaining,
-                            "reset_seconds": reset_seconds,
-                            "reset_at": reset_at,
-                            "updated_at": utc_now(),
-                        }
-                    )
+                    snapshot = {
+                        "limit": limit,
+                        "remaining": remaining,
+                        "reset_seconds": reset_seconds,
+                        "reset_at": reset_at,
+                        "updated_at": utc_now(),
+                    }
+                    set_last_rate_limit(snapshot)
+                    persist_rate_limit(snapshot)
             except Exception:
                 # Non-fatal: keep query flow even if rate-limit header parse fails.
                 pass
@@ -258,6 +259,61 @@ def _build_query_record(params: dict, max_mileage: int) -> dict:
     }
 
 
+def _normalized_scope_key(params: dict, max_mileage: int) -> str:
+    scope = {
+        "params": params or {},
+        "max_mileage": int(max_mileage),
+    }
+    return json.dumps(scope, sort_keys=True, separators=(",", ":"))
+
+
+def _hit_signature(hit: dict) -> str:
+    # Signature fields chosen to represent one availability row for dedupe comparison.
+    return json.dumps(
+        {
+            "date": hit.get("date"),
+            "source": hit.get("source"),
+            "origin": hit.get("origin"),
+            "destination": hit.get("destination"),
+            "airlines": hit.get("airlines") or "",
+            "flight_numbers": hit.get("flight_numbers") or "",
+            "mileage": hit.get("mileage"),
+            "seats": hit.get("seats"),
+        },
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+
+
+def _hit_signature_set(hits: list) -> set:
+    return {_hit_signature(h) for h in (hits or [])}
+
+
+def _find_previous_scope_record(data: dict, params: dict, max_mileage: int) -> Optional[dict]:
+    target_scope = _normalized_scope_key(params, max_mileage)
+    for r in data.get("past_queries", []):
+        if _normalized_scope_key(r.get("params") or {}, int(r.get("max_mileage", 100000))) == target_scope:
+            return r
+    return None
+
+
+def _should_send_email_on_growth(previous_record: Optional[dict], current_record: dict) -> tuple:
+    if not previous_record:
+        return (False, "no_previous_baseline", 0)
+
+    prev_hits = previous_record.get("hits") or []
+    curr_hits = current_record.get("hits") or []
+    if len(curr_hits) <= len(prev_hits):
+        return (False, "not_increased", 0)
+
+    prev_set = _hit_signature_set(prev_hits)
+    curr_set = _hit_signature_set(curr_hits)
+    added_count = len(curr_set - prev_set)
+    if added_count <= 0:
+        return (False, "no_new_entries", 0)
+    return (True, "increased_with_new_entries", added_count)
+
+
 def set_last_rate_limit(rate_limit: dict) -> None:
     global LAST_RATE_LIMIT
     with RATE_LIMIT_LOCK:
@@ -267,6 +323,16 @@ def set_last_rate_limit(rate_limit: dict) -> None:
 def get_last_rate_limit() -> Optional[dict]:
     with RATE_LIMIT_LOCK:
         return dict(LAST_RATE_LIMIT) if LAST_RATE_LIMIT else None
+
+
+def persist_rate_limit(rate_limit: dict) -> None:
+    if not rate_limit:
+        return
+    with STORE_LOCK:
+        data = _read_store_unlocked()
+        data.setdefault("meta", {})
+        data["meta"]["api_limits"] = dict(rate_limit)
+        _write_store_unlocked(data)
 
 
 def _parse_iso_utc(raw: str) -> Optional[datetime]:
@@ -322,15 +388,22 @@ def process_due_schedule_once() -> None:
 
     try:
         record = _build_query_record(params, max_mileage=max_mileage)
-        if record["total_hits"] > 0:
-            try:
-                send_alert_email(record)
-                record["email_sent"] = True
-            except Exception as exc:
-                record["email_error"] = str(exc)
-
         with STORE_LOCK:
             data = _read_store_unlocked()
+            previous_record = _find_previous_scope_record(data, params, max_mileage)
+            should_send, send_reason, added_count = _should_send_email_on_growth(previous_record, record)
+            if should_send and record["total_hits"] > 0:
+                try:
+                    send_alert_email(record)
+                    record["email_sent"] = True
+                    record["email_sent_reason"] = send_reason
+                    record["new_entries_vs_previous"] = added_count
+                except Exception as exc:
+                    record["email_error"] = str(exc)
+            else:
+                record["email_skipped_reason"] = send_reason
+                record["new_entries_vs_previous"] = added_count
+
             data["past_queries"].insert(0, record)
             for idx, entry in enumerate(data.get("upcoming_queries", [])):
                 if entry.get("id") == schedule_id:
@@ -542,13 +615,14 @@ class Handler(BaseHTTPRequestHandler):
 
         if self.path == "/api/state":
             data = read_store()
+            persisted_limits = (data.get("meta") or {}).get("api_limits")
             self._send_json(
                 {
                     "past_queries": data["past_queries"],
                     "upcoming_queries": data["upcoming_queries"],
                     "next_query": normalize_next_query(data),
                     "default_params": default_params(),
-                    "api_limits": get_last_rate_limit(),
+                    "api_limits": persisted_limits or get_last_rate_limit(),
                 }
             )
             return
@@ -576,22 +650,22 @@ class Handler(BaseHTTPRequestHandler):
                 record = _build_query_record(params, max_mileage=max_mileage)
                 with STORE_LOCK:
                     data = _read_store_unlocked()
+                    previous_record = _find_previous_scope_record(data, params, max_mileage)
+                    should_send, send_reason, added_count = _should_send_email_on_growth(previous_record, record)
+                    if send_email and should_send and record["total_hits"] > 0:
+                        try:
+                            send_alert_email(record)
+                            record["email_sent"] = True
+                            record["email_sent_reason"] = send_reason
+                            record["new_entries_vs_previous"] = added_count
+                        except Exception as exc:
+                            record["email_error"] = str(exc)
+                    else:
+                        if send_email:
+                            record["email_skipped_reason"] = send_reason
+                            record["new_entries_vs_previous"] = added_count
                     data["past_queries"].insert(0, record)
                     _write_store_unlocked(data)
-
-                email_sent = False
-                email_error = None
-                if send_email and record["total_hits"] > 0:
-                    try:
-                        send_alert_email(record)
-                        email_sent = True
-                    except Exception as exc:
-                        email_error = str(exc)
-
-                if email_sent:
-                    record["email_sent"] = True
-                if email_error:
-                    record["email_error"] = email_error
                 record["api_limits"] = get_last_rate_limit()
                 self._send_json(record)
                 return

@@ -62,6 +62,32 @@
       font-size: 28px;
       letter-spacing: -0.02em;
       font-weight: 700;
+      display: inline-flex;
+      align-items: baseline;
+      gap: 8px;
+      white-space: nowrap;
+    }
+
+    .brand-acronym {
+      display: inline-block;
+    }
+
+    .brand-expansion {
+      display: inline-block;
+      max-width: 0;
+      opacity: 0;
+      overflow: hidden;
+      white-space: nowrap;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 500;
+      letter-spacing: 0;
+      transition: max-width 0.22s ease, opacity 0.18s ease;
+    }
+
+    .hero:hover .brand-expansion {
+      max-width: 520px;
+      opacity: 1;
     }
 
     .api-limit-indicator {
@@ -300,13 +326,36 @@
 
     .query-item {
       border-bottom: 0;
-      padding: 8px 28px 8px 4px;
+      padding: 7px 4px 7px 4px;
       background: #fff;
       cursor: pointer;
       transition: background-color 0.12s ease;
       position: relative;
       border-radius: 4px;
-      margin-bottom: 6px;
+      margin-bottom: 4px;
+    }
+
+    .query-item::after {
+      content: "";
+      position: absolute;
+      right: 0;
+      top: 0;
+      width: 38px;
+      height: 100%;
+      opacity: 0;
+      pointer-events: none;
+      backdrop-filter: blur(3px);
+      -webkit-backdrop-filter: blur(3px);
+      background: rgba(255, 255, 255, 0.72);
+      transition: opacity 0.12s ease;
+      border-top-right-radius: 4px;
+      border-bottom-right-radius: 4px;
+      z-index: 1;
+    }
+
+    .query-item:hover::after,
+    .query-item:focus-within::after {
+      opacity: 1;
     }
 
     .query-item.selected {
@@ -345,6 +394,7 @@
       visibility: hidden;
       pointer-events: none;
       transition: opacity 0.12s ease;
+      z-index: 2;
     }
 
     #pastList .query-item:hover .delete-past-btn,
@@ -438,11 +488,13 @@
 
     .query-meta {
       display: flex;
-      justify-content: flex-start;
-      font-size: 11px;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
       color: var(--muted);
-      margin-bottom: 6px;
+      margin-bottom: 0;
       gap: 8px;
+      width: 100%;
     }
 
     .chips {
@@ -454,11 +506,12 @@
 
     .chip {
       padding: 0;
-      font-size: 10px;
+      font-size: 12px;
       line-height: 1;
       border: 0;
       background: transparent;
       color: var(--muted);
+      white-space: nowrap;
     }
 
     .chip.hit {
@@ -879,7 +932,10 @@
 <body>
   <main class="shell">
     <header class="hero">
-      <h1 class="title">RewardsTicket</h1>
+      <h1 class="title" aria-label="PULSE - Polling Unlocks Live Seat Exposure">
+        <span class="brand-acronym">PULSE</span>
+        <span class="brand-expansion">Polling Unlocks Live Seat Exposure</span>
+      </h1>
       <div id="apiLimitIndicator" class="api-limit-indicator">API limits remaining: --</div>
     </header>
 
@@ -890,7 +946,7 @@
             <div class="panel-header-left">
               <h2 class="panel-title">Past Queries</h2>
             </div>
-            <button id="clearPastBtn" class="header-action-btn" type="button">Clear all</button>
+            <button id="clearPastBtn" class="header-action-btn" type="button">CLEAR ALL</button>
           </div>
           <div class="panel-body">
             <div id="pastList" class="list">
@@ -968,9 +1024,9 @@
                 </div>
               </div>
               <button id="applyCriteriaBtn" class="secondary-btn hidden" type="button" style="margin-top:8px;">
-                Apply Criteria to Next Query
+                APPLY CRITERIA TO AUTO RUN
               </button>
-              <button class="primary-btn" type="submit">Off-cycle Run</button>
+              <button class="primary-btn" type="submit">OFF-CYCLE RUN</button>
             </form>
           </div>
         </section>
@@ -1052,6 +1108,20 @@
       if (!raw) return "-";
       const d = new Date(raw);
       return Number.isNaN(d.getTime()) ? raw : d.toLocaleString();
+    }
+
+    function formatPastDate(raw) {
+      if (!raw) return "-";
+      const d = new Date(raw);
+      if (Number.isNaN(d.getTime())) return raw;
+      return d.toLocaleString([], {
+        month: "numeric",
+        day: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: true,
+      });
     }
 
     function formatNextRun(raw) {
@@ -1415,9 +1485,11 @@
       root.innerHTML = state.past
         .map((q) => {
           const selected = state.selectedId === q.id ? "selected" : "";
-          const runningChip = q.is_running ? `<span class="chip running">running...</span>` : "";
-          const failedChip = q.is_failed ? `<span class="chip failed">failed</span>` : "";
-          const hitsChip = !q.is_running ? `<span class="chip hit">${q.total_hits} hits</span>` : "";
+          const statusText = q.is_running
+            ? `<span class="chip running">running...</span>`
+            : q.is_failed
+            ? `<span class="chip failed">failed</span>`
+            : `<span class="chip hit">${q.total_hits} hits</span>`;
           const deleteBtn = q.is_running
             ? ""
             : `<button class="delete-past-btn" type="button" data-id="${q.id}" aria-label="Delete past query">
@@ -1426,12 +1498,8 @@
           return `
             <div class="query-item ${selected}" data-id="${q.id}">
               <div class="query-meta">
-                <span>${formatDate(q.created_at)}</span>
-              </div>
-              <div class="chips">
-                ${hitsChip}
-                ${runningChip}
-                ${failedChip}
+                <span>${formatPastDate(q.created_at)}</span>
+                ${statusText}
               </div>
               ${deleteBtn}
             </div>
@@ -1501,7 +1569,7 @@
             <input class="next-query-input" id="nextQueryInterval" type="text" inputmode="numeric" pattern="[0-9]*" value="${intervalValue}" />
             <span class="next-query-label">minutes</span>
             <span class="next-query-spacer" aria-hidden="true"></span>
-            <button id="confirmNextQueryBtn" class="text-btn inline-apply" type="button" disabled>Re-apply</button>
+            <button id="confirmNextQueryBtn" class="text-btn inline-apply" type="button" disabled>SAVE</button>
           </div>
         </div>
       `;

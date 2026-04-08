@@ -1,6 +1,6 @@
 # RewardsTicket
 
-A focused award-seat monitoring tool built around the Seats.aero Partner API.
+A focused award-seat monitoring tool built around the Seats.aero [Partner API](https://docs.seats.aero/article/68-seatsaero-pro-api-access-limits-and-usage).
 
 ## Why This Exists
 
@@ -16,7 +16,7 @@ This tool exists to reduce that gap. RewardsTicket actively polls Seats.aero dat
 
 ## Before You Start
 
-1. Seats.aero API access is required. This tool depends on the Seats.aero Partner API. API access is available to Seats.aero Pro users, so each user needs their own paid access.
+1. This tool depends on the Seats.aero Partner API. API access is available to [Seats.aero](https://seats.aero/) Pro users, so each user needs their own paid access.
 2. If you would like to have auto email alerts, you will need  a Google App Password. To generate a Google app-specific password, you'll have to enable 2-Step Verification in your Google account, then create an app password here via this link [Create and manage your app passwords.](https://myaccount.google.com/apppasswords)The  16-character password value should be placed into our .env file.
 
 ## Current Features
@@ -33,6 +33,7 @@ This tool exists to reduce that gap. RewardsTicket actively polls Seats.aero dat
 - Configure a **next query** profile and reuse criteria quickly.
 - Apply **program filters** and date sorting in results.
 - Send HTML email alerts from your own SMTP setup.&#x20;
+- Email dedupe rule: an email is sent only when the current run has a higher hit count and includes newly added results versus the previous comparable run (same params + max mileage). If results are fewer or unchanged, no email is sent.
 
 > This app is intentionally opinionated and built around my personal workflow.
 > For example: direct flights only, business-cabin focus, and no support for creating multiple query tasks at the same time.
@@ -106,6 +107,26 @@ If you plan to publish the repo, be sure to:
 - Local JSON persistence only (`data/store.json`)
 - No multi-user auth model
 - Scheduling model is currently local-process oriented
+
+## Refresh Model and Polling Rationale
+
+Based on public comments from the Seats.aero founder and community discussions, the practical refresh threshold for Search / Explore / Alerts is often described as around 3 hours.
+
+Important constraint:
+- This project does **not** bypass Seats.aero data limits.
+- We query the same Seats.aero **Cached Search** layer.
+
+The key uncertainty is timing transparency:
+- Seats.aero has not publicly documented exact refresh timestamps.
+- It is unclear whether all programs refresh on one global 3-hour boundary, or in staggered batches.
+
+That uncertainty creates room for polling:
+- If updates are staggered by program/route/carrier, higher-frequency polling can get us closer to newly available data sooner.
+- Public wording such as "continually updating award availability in the background" suggests ongoing background updates, not necessarily one synchronized global refresh moment.
+
+From an engineering perspective, with 80k+ routes and many programs, a staggered queue-based refresh model is generally more plausible than a single synchronized full refresh cycle.
+
+Even under a conservative alternative (queue crawling, but database publication on larger batch intervals), more frequent polling still helps us minimize delivery latency on our side. We can not get "fresher-than-source" data, but we can get closer to "first moment the updated data becomes available to query."
 
 ## License
 
