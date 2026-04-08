@@ -45,6 +45,10 @@
     .hero {
       padding: 14px 16px;
       border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
     }
 
     /* Specific override: main.shell > header.hero */
@@ -58,6 +62,13 @@
       font-size: 28px;
       letter-spacing: -0.02em;
       font-weight: 700;
+    }
+
+    .api-limit-indicator {
+      font-size: 12px;
+      color: var(--muted);
+      white-space: nowrap;
+      text-align: right;
     }
 
     .subtitle {
@@ -162,6 +173,21 @@
       display: flex;
       align-items: center;
       gap: 8px;
+    }
+
+    .header-action-btn {
+      border: 0;
+      background: transparent;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      padding: 0;
+      line-height: 1;
+    }
+
+    .header-action-btn:hover {
+      color: var(--text);
     }
 
     .panel-title {
@@ -530,6 +556,22 @@
       cursor: default;
     }
 
+    .switch.switch-compact {
+      width: 30px;
+      height: 18px;
+      margin-left: 4px;
+    }
+
+    #upcomingPanel .panel-header-left {
+      align-items: center;
+    }
+
+    #upcomingPanel .auto-run-switch {
+      margin-top: 0;
+      margin-bottom: 0;
+      transform: translateY(1px);
+    }
+
     .switch input {
       opacity: 0;
       width: 0;
@@ -565,8 +607,23 @@
       transform: translateX(14px);
     }
 
+    .switch.switch-compact .switch-slider::before {
+      width: 12px;
+      height: 12px;
+      left: 3px;
+      top: 3px;
+    }
+
+    .switch.switch-compact input:checked + .switch-slider::before {
+      transform: translateX(12px);
+    }
+
     .switch input:disabled + .switch-slider {
       opacity: 1;
+    }
+
+    #upcomingPanel.auto-run-disabled .collapse-btn {
+      display: none;
     }
 
     label {
@@ -823,6 +880,7 @@
   <main class="shell">
     <header class="hero">
       <h1 class="title">RewardsTicket</h1>
+      <div id="apiLimitIndicator" class="api-limit-indicator">API limits remaining: --</div>
     </header>
 
     <section class="layout">
@@ -832,6 +890,7 @@
             <div class="panel-header-left">
               <h2 class="panel-title">Past Queries</h2>
             </div>
+            <button id="clearPastBtn" class="header-action-btn" type="button">Clear all</button>
           </div>
           <div class="panel-body">
             <div id="pastList" class="list">
@@ -843,7 +902,11 @@
         <section class="panel" id="upcomingPanel">
           <div class="panel-header collapsible-header" data-toggle-target="upcomingBody" role="button" tabindex="0" aria-expanded="true">
             <div class="panel-header-left">
-              <h2 class="panel-title">Next Query</h2>
+              <h2 class="panel-title">Auto Run</h2>
+              <label class="switch switch-compact auto-run-switch" for="autoRunEnabledToggle" aria-label="Enable Auto Run">
+                <input id="autoRunEnabledToggle" type="checkbox" checked />
+                <span class="switch-slider"></span>
+              </label>
             </div>
             <button class="collapse-btn" type="button" data-toggle-target="upcomingBody" aria-expanded="true" aria-label="Toggle Upcoming Queries">
               <i data-lucide="chevron-down" class="collapse-icon" aria-hidden="true"></i>
@@ -960,6 +1023,8 @@
       programMenuOpen: false,
       criteriaBaseline: null,
       dateSortOrder: "asc",
+      autoRunEnabled: true,
+      apiLimits: null,
     };
     let toastTimer = null;
 
@@ -1012,6 +1077,30 @@
       if (Number.isNaN(d.getTime())) return raw;
       const pad = (n) => String(n).padStart(2, "0");
       return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    }
+
+    function formatResetInHours(raw) {
+      if (!raw) return "--";
+      const d = new Date(raw);
+      if (Number.isNaN(d.getTime())) return "--";
+      const diffMs = d.getTime() - Date.now();
+      const hours = Math.max(0, diffMs / 3600000);
+      return hours >= 10 ? hours.toFixed(0) : hours.toFixed(1);
+    }
+
+    function updateApiLimitIndicator() {
+      const el = document.getElementById("apiLimitIndicator");
+      if (!el) return;
+      const r = state.apiLimits;
+      if (!r || !Number.isFinite(Number(r.limit)) || !Number.isFinite(Number(r.remaining)) || Number(r.limit) <= 0) {
+        el.textContent = "API limits remaining: --";
+        return;
+      }
+      const limit = Number(r.limit);
+      const remaining = Number(r.remaining);
+      const pct = Math.max(0, Math.min(100, Math.round((remaining / limit) * 100)));
+      const resetIn = formatResetInHours(r.reset_at);
+      el.textContent = `API limits remaining: ${pct}% [reset in ${resetIn} hours]`;
     }
 
     function queryParamsFromForm() {
@@ -1221,6 +1310,38 @@
       renderPast();
     }
 
+    function syncAutoRunSectionUI() {
+      const panel = document.getElementById("upcomingPanel");
+      const body = document.getElementById("upcomingBody");
+      const header = panel ? panel.querySelector(".panel-header") : null;
+      const btn = panel ? panel.querySelector('.collapse-btn[data-toggle-target="upcomingBody"]') : null;
+      const toggle = document.getElementById("autoRunEnabledToggle");
+      if (!panel || !body || !header) return;
+      const wasDisabled = panel.classList.contains("auto-run-disabled");
+
+      if (toggle) {
+        toggle.checked = !!state.autoRunEnabled;
+        toggle.disabled = !state.nextQuery;
+      }
+
+      if (!state.autoRunEnabled) {
+        body.classList.add("is-collapsed");
+        panel.classList.add("is-panel-collapsed");
+        panel.classList.add("auto-run-disabled");
+        header.setAttribute("aria-expanded", "false");
+        if (btn) btn.setAttribute("aria-expanded", "false");
+      } else {
+        panel.classList.remove("auto-run-disabled");
+        if (wasDisabled) {
+          body.classList.remove("is-collapsed");
+          panel.classList.remove("is-panel-collapsed");
+        }
+        const expanded = body.classList.contains("is-collapsed") ? "false" : "true";
+        header.setAttribute("aria-expanded", expanded);
+        if (btn) btn.setAttribute("aria-expanded", expanded);
+      }
+    }
+
     function renderFlightCards(record) {
       const flightList = document.getElementById("flightList");
 
@@ -1419,10 +1540,13 @@
     }
 
     async function upsertNextQuery(intervalMinutes) {
+      const maxMileage = parseIntegerString(document.getElementById("maxMileage").value, 100000);
       const body = {
         name: state.nextQuery?.name || "Hourly Search",
         interval_minutes: intervalMinutes,
         params: queryParamsFromForm(),
+        max_mileage: maxMileage,
+        enabled: state.autoRunEnabled,
       };
       const res = await fetch("/api/query/schedule", {
         method: "POST",
@@ -1436,10 +1560,31 @@
       }
       state.nextQuery = data;
       state.upcoming = data ? [data] : [];
+      state.autoRunEnabled = parseBooleanish(data?.enabled, true);
       state.criteriaBaseline = normalizeCriteria(data?.params || {});
       renderUpcoming();
+      syncAutoRunSectionUI();
       updateCriteriaApplyButton();
       setStatus("Next query reset.", "ok");
+    }
+
+    async function toggleAutoRunEnabled(enabled) {
+      if (!state.nextQuery) return;
+      const res = await fetch("/api/query/schedule/toggle", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ enabled }),
+      });
+      const data = await res.json();
+      if (data.error) {
+        setStatus(`Auto Run toggle error: ${data.error}`, "error");
+        return;
+      }
+      state.nextQuery = data;
+      state.autoRunEnabled = parseBooleanish(data.enabled, true);
+      renderUpcoming();
+      syncAutoRunSectionUI();
+      setStatus(state.autoRunEnabled ? "Auto Run enabled." : "Auto Run disabled.", "ok");
     }
 
     async function applyCriteriaToNextQuery() {
@@ -1480,6 +1625,8 @@
       state.past = data.past_queries || [];
       state.upcoming = data.upcoming_queries || [];
       state.nextQuery = data.next_query || state.upcoming[state.upcoming.length - 1] || null;
+      state.apiLimits = data.api_limits || state.apiLimits;
+      state.autoRunEnabled = parseBooleanish(state.nextQuery?.enabled, true);
       const d = state.nextQuery?.params || data.default_params || {};
       state.criteriaBaseline = normalizeCriteria(d);
       document.getElementById("origin").value = normalizeAirportCsv(d.origin_airport || "");
@@ -1487,12 +1634,16 @@
       document.getElementById("startDate").value = d.start_date || "";
       document.getElementById("endDate").value = d.end_date || "";
       document.getElementById("cabin").value = formatCabinDisplay(d.cabin || "business");
+      const initialMaxMileage = Number(state.nextQuery?.max_mileage || 100000);
+      document.getElementById("maxMileage").value = numberWithComma(initialMaxMileage);
       const onlyDirect = document.getElementById("onlyDirectFlights");
       if (onlyDirect) {
         onlyDirect.checked = true;
       }
       renderPast();
       renderUpcoming();
+      syncAutoRunSectionUI();
+      updateApiLimitIndicator();
       updateCriteriaApplyButton();
       if (state.past.length) {
         state.selectedId = state.past[0].id;
@@ -1501,6 +1652,44 @@
         renderCurrentSelectedResult();
       } else {
         renderFlightCards(null);
+      }
+    }
+
+    function hasLocalPendingRuns() {
+      return state.past.some((q) => String(q.id || "").startsWith("pending-"));
+    }
+
+    async function refreshStateSilently() {
+      try {
+        const res = await fetch("/api/state");
+        const data = await res.json();
+        if (data.error) return;
+
+        const serverPast = data.past_queries || [];
+        const localPending = state.past.filter((q) => String(q.id || "").startsWith("pending-"));
+        state.past = localPending.length ? [...localPending, ...serverPast] : serverPast;
+        state.upcoming = data.upcoming_queries || [];
+        state.nextQuery = data.next_query || state.upcoming[state.upcoming.length - 1] || null;
+        state.apiLimits = data.api_limits || state.apiLimits;
+        state.autoRunEnabled = parseBooleanish(state.nextQuery?.enabled, true);
+
+        if (state.selectedId && !state.past.some((q) => q.id === state.selectedId)) {
+          state.selectedId = state.past.length ? state.past[0].id : null;
+          state.selectedPrograms = [];
+          state.availablePrograms = [];
+        }
+
+        renderPast();
+        renderUpcoming();
+        syncAutoRunSectionUI();
+        updateApiLimitIndicator();
+        if (state.selectedId) {
+          renderFlightCards(getSelectedRecord());
+        } else {
+          renderFlightCards(null);
+        }
+      } catch (_) {
+        // silent background refresh
       }
     }
 
@@ -1564,6 +1753,8 @@
         return;
       }
       state.past = state.past.map((q) => (q.id === pendingId ? data : q));
+      state.apiLimits = data.api_limits || state.apiLimits;
+      updateApiLimitIndicator();
       setStatus(`Done. ${data.total_hits} matching flights found.`, "ok");
       state.selectedId = data.id;
       state.selectedPrograms = [];
@@ -1573,6 +1764,36 @@
 
     document.getElementById("applyCriteriaBtn").addEventListener("click", async () => {
       await applyCriteriaToNextQuery();
+    });
+
+    document.getElementById("clearPastBtn").addEventListener("click", async () => {
+      if (!state.past.length) return;
+      const res = await fetch("/api/query/clear", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      const data = await res.json();
+      if (data.error) {
+        setStatus(`Clear error: ${data.error}`, "error");
+        return;
+      }
+      state.past = [];
+      state.selectedId = null;
+      state.selectedPrograms = [];
+      state.availablePrograms = [];
+      renderPast();
+      renderFlightCards(null);
+      setStatus("All past queries cleared.", "ok");
+    });
+
+    document.getElementById("autoRunEnabledToggle").addEventListener("click", (e) => {
+      e.stopPropagation();
+    });
+
+    document.getElementById("autoRunEnabledToggle").addEventListener("change", async (e) => {
+      const checked = !!e.target.checked;
+      await toggleAutoRunEnabled(checked);
     });
 
     document.getElementById("programFilterToggle").addEventListener("click", (e) => {
@@ -1600,6 +1821,9 @@
     function togglePanelByTarget(targetId) {
       const body = document.getElementById(targetId);
       if (!body) return;
+      if (targetId === "upcomingBody" && !state.autoRunEnabled) {
+        return;
+      }
       const panel = body.closest(".panel");
       const willCollapse = !body.classList.contains("is-collapsed");
       body.classList.toggle("is-collapsed", willCollapse);
@@ -1644,6 +1868,7 @@
     initMaxMileageInput();
     attachCriteriaChangeWatchers();
     loadState();
+    setInterval(refreshStateSilently, 20000);
   </script>
 </body>
 </html>

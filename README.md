@@ -28,7 +28,7 @@ This tool exists to reduce that gap. RewardsTicket actively polls Seats.aero dat
   - cabin
   - direct-flights-only toggle
   - max mileage cap
-- Run an **off-cycle query** immediately when you do not want to wait.
+- Run an **off-cycle query** immediately when you do not want to wait. `Off-cycle Run` is manual and does not send email.
 - Keep a **local run history** so you can compare snapshots.
 - Configure a **next query** profile and reuse criteria quickly.
 - Apply **program filters** and date sorting in results.
@@ -37,29 +37,6 @@ This tool exists to reduce that gap. RewardsTicket actively polls Seats.aero dat
 > This app is intentionally opinionated and built around my personal workflow.
 > For example: direct flights only, business-cabin focus, and no support for creating multiple query tasks at the same time.
 > Since this project is open source, you can extend it based on the Seats.aero API documentation for your own needs.
-
-## Important Behavior
-
-- `Off-cycle Run` is manual and **does not send email by default**.
-- Data is persisted in local file: `data/store.json`.
-- If `data/store.json` is missing, the app auto-creates it at startup.
-
-## Project Structure
-
-- `app.py`: Python backend + API routes + Seats query + email sender
-- `ui/index.html`: UI (HTML/CSS/JS)
-- `data/store.json`: local persistence
-- `.env`: runtime secrets/config (not committed)
-
-## Runtime Environment (Important)
-
-- This is **not** a hosted web app/SaaS.
-- It is a **local-first monitoring service**:
-  - a long-running Python process (`app.py`)
-  - plus a browser UI served at `http://127.0.0.1:8787`
-- To keep monitoring reliable, run it on an always-on machine.
-- Recommended environment: a non-sleeping local machine such as a **Mac mini**.
-- Locking the screen is fine, but system sleep will pause the process.
 
 ## Quick Start
 
@@ -70,7 +47,7 @@ git clone <your-repo-url>
 cd RewardsTicket
 ```
 
-- Create `.env` from `.env.example`
+- Rename the `.env.example` file to `.env`
 
 ```bash
 cp .env.example .env
@@ -85,6 +62,23 @@ python3 app.py
 
 - Open the local url:
 - `http://127.0.0.1:8787`
+
+## Project Structure
+
+- `app.py`: Python backend + API routes + Seats query + email sender
+- `ui/index.html`: UI (HTML/CSS/JS)
+- `data/store.json`: local persistence. The app auto-creates this file at startup.
+- `.env`: runtime secrets/config (not committed)
+
+## Runtime Environment
+
+- This is **not** a hosted web app/SaaS.
+- It is a **local-first monitoring service**:
+  - a long-running Python process (`app.py`)
+  - plus a browser UI served at `http://127.0.0.1:8787`
+- To keep monitoring reliable, run it on an always-on machine.
+- Recommended environment: a non-sleeping local machine such as a **Mac mini**.
+- Locking the screen is fine, but system sleep will pause the process.
 
 ## Environment Variables
 
