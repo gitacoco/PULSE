@@ -439,6 +439,28 @@ def _env_bool(name: str, default: bool) -> bool:
     return raw.strip().lower() in {"1", "true", "yes", "on"}
 
 
+def get_email_alert_status() -> dict:
+    # Re-read local .env so status reflects latest local edits.
+    load_dotenv(BASE_DIR / ".env")
+    required = [
+        "SMTP_HOST",
+        "SMTP_PORT",
+        "SMTP_USER",
+        "SMTP_PASS",
+        "ALERT_TO_EMAIL",
+        "ALERT_FROM_EMAIL",
+    ]
+    missing = []
+    for key in required:
+        value = (os.environ.get(key) or "").strip()
+        if not value:
+            missing.append(key)
+    return {
+        "configured": len(missing) == 0,
+        "missing_fields": missing,
+    }
+
+
 def send_alert_email(record: dict) -> None:
     smtp_host = (os.environ.get("SMTP_HOST") or "").strip()
     smtp_port_raw = (os.environ.get("SMTP_PORT") or "").strip()
@@ -637,6 +659,7 @@ class Handler(BaseHTTPRequestHandler):
                     "next_query": normalize_next_query(data),
                     "default_params": default_params(),
                     "api_limits": persisted_limits or get_last_rate_limit(),
+                    "email_alert": get_email_alert_status(),
                 }
             )
             return

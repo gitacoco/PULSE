@@ -415,7 +415,7 @@
 
     .next-query-wrap {
       display: grid;
-      gap: 8px;
+      gap: 0;
     }
 
     .next-query-row {
@@ -425,6 +425,29 @@
       font-size: 12px;
       color: var(--muted);
       padding-bottom: 0;
+      height: 24px;
+    }
+
+    .next-query-email-status {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 0;
+      height: 24px;
+    }
+
+    .email-status-value {
+      font-weight: 600;
+    }
+
+    .email-status-configured {
+      color: #0b4a3f;
+    }
+
+    .email-status-not-configured {
+      color: #9a3412;
     }
 
     .next-query-time {
@@ -436,6 +459,7 @@
       display: flex;
       align-items: center;
       gap: 8px;
+      height: 24px;
     }
 
     .next-query-spacer {
@@ -454,6 +478,7 @@
 
     .next-query-input {
       width: 56px;
+      height: 20px;
       appearance: textfield;
       -moz-appearance: textfield;
     }
@@ -1129,6 +1154,7 @@
       dateSortOrder: "asc",
       autoRunEnabled: true,
       apiLimits: null,
+      emailAlert: null,
     };
     let toastTimer = null;
 
@@ -1606,11 +1632,22 @@
       const q = state.nextQuery;
       const intervalValue = q?.interval_minutes ?? 60;
       const nextRunText = q?.next_run_at ? formatNextRun(q.next_run_at) : "-";
+      const emailConfigured = !!state.emailAlert?.configured;
+      const emailStatusClass = emailConfigured ? "email-status-configured" : "email-status-not-configured";
+      const emailStatusText = emailConfigured ? "Configured" : "Not configured";
+      const missingFields = (state.emailAlert?.missing_fields || []).join(", ");
+      const emailStatusTitle = emailConfigured
+        ? "All required fields are present in .env"
+        : `Not configured. Update SMTP/ALERT fields in .env (see .env.example). Missing: ${missingFields}`;
       root.innerHTML = `
         <div class="next-query-wrap">
           <div class="next-query-row">
             <span>Next Run</span>
             <span class="next-query-time">${nextRunText}</span>
+          </div>
+          <div class="next-query-email-status">
+            <span>Email Alert</span>
+            <span class="email-status-value ${emailStatusClass}" title="${emailStatusTitle}">${emailStatusText}</span>
           </div>
           <div class="next-query-control">
             <span class="next-query-label">Running every</span>
@@ -1742,6 +1779,7 @@
       state.upcoming = data.upcoming_queries || [];
       state.nextQuery = data.next_query || state.upcoming[state.upcoming.length - 1] || null;
       state.apiLimits = data.api_limits || state.apiLimits;
+      state.emailAlert = data.email_alert || state.emailAlert;
       state.autoRunEnabled = parseBooleanish(state.nextQuery?.enabled, true);
       const d = state.nextQuery?.params || data.default_params || {};
       state.criteriaBaseline = normalizeCriteria(d);
@@ -1787,6 +1825,7 @@
         state.upcoming = data.upcoming_queries || [];
         state.nextQuery = data.next_query || state.upcoming[state.upcoming.length - 1] || null;
         state.apiLimits = data.api_limits || state.apiLimits;
+        state.emailAlert = data.email_alert || state.emailAlert;
         state.autoRunEnabled = parseBooleanish(state.nextQuery?.enabled, true);
 
         if (state.selectedId && !state.past.some((q) => q.id === state.selectedId)) {
