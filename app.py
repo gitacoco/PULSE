@@ -474,7 +474,7 @@ def send_alert_email(record: dict) -> None:
         )
 
     hits = record.get("hits", [])
-    subject = f"RewardsTicket Alert: {record.get('total_hits', 0)} matching flights"
+    subject = f"PULSE Alert: {record.get('total_hits', 0)} matching flights"
     created_human = human_time(record.get("created_at", ""))
     lines = [
         f"Created: {created_human}",
@@ -518,7 +518,7 @@ def send_alert_email(record: dict) -> None:
   <body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#111827;background:#f9fafb;padding:20px;">
     <div style="max-width:780px;margin:0 auto;background:#ffffff;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden;">
       <div style="padding:14px 16px;border-bottom:1px solid #e5e7eb;background:#111827;color:#ffffff;">
-        <div style="font-size:16px;font-weight:600;">RewardsTicket Alert</div>
+        <div style="font-size:16px;font-weight:600;">PULSE Alert</div>
         <div style="font-size:12px;opacity:0.85;margin-top:4px;">{esc(record.get('total_hits', 0))} matching flights found</div>
       </div>
       <div style="padding:14px 16px;">
@@ -841,7 +841,7 @@ def main() -> None:
     stop_event = threading.Event()
     threading.Thread(target=scheduler_worker, args=(stop_event,), daemon=True).start()
     server = ThreadingHTTPServer(("127.0.0.1", 8787), Handler)
-    print("RewardsTicket GUI running at http://127.0.0.1:8787")
+    print("PULSE GUI running at http://127.0.0.1:8787")
     server.serve_forever()
 
 

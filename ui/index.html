@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>RewardsTicket Dashboard</title>
+  <title>PULSE</title>
   <style>
     :root {
       --bg: #ffffff;
@@ -675,6 +675,50 @@
       opacity: 1;
     }
 
+    .switch.is-locked {
+      cursor: help;
+    }
+
+    .switch.is-locked .switch-slider {
+      opacity: 1;
+      filter: none;
+      background: #cfd5df;
+    }
+
+    .switch.is-locked input:checked + .switch-slider {
+      background: #cfd5df;
+    }
+
+    .switch.is-locked .switch-slider::before {
+      background: #eef2f7;
+    }
+
+    .switch.is-locked::after {
+      content: attr(data-tooltip);
+      position: absolute;
+      right: 0;
+      bottom: calc(100% + 8px);
+      transform: none;
+      background: rgba(17, 24, 39, 0.95);
+      color: #fff;
+      font-size: 11px;
+      line-height: 1.3;
+      padding: 6px 8px;
+      border-radius: 6px;
+      white-space: normal;
+      width: max-content;
+      max-width: 220px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.12s ease;
+      z-index: 9999;
+    }
+
+    .switch.is-locked:hover::after,
+    .switch.is-locked:focus-within::after {
+      opacity: 1;
+    }
+
     #upcomingPanel.auto-run-disabled .collapse-btn {
       display: none;
     }
@@ -1017,7 +1061,11 @@
                 </div>
                 <div class="toggle-row">
                   <span class="toggle-label">Direct Flights Only</span>
-                  <label class="switch" for="onlyDirectFlights">
+                  <label
+                    class="switch is-locked"
+                    for="onlyDirectFlights"
+                    data-tooltip="Locked in this release. Edit code to unlock."
+                  >
                     <input id="onlyDirectFlights" type="checkbox" checked disabled />
                     <span class="switch-slider"></span>
                   </label>

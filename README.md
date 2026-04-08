@@ -1,4 +1,4 @@
-# RewardsTicket
+# PULSE
 
 A focused award-seat monitoring tool built around the Seats.aero [Partner API](https://docs.seats.aero/article/68-seatsaero-pro-api-access-limits-and-usage).
 
@@ -9,7 +9,7 @@ I'm a pro user of seats.aero. But based on real usage, Seats.aero alerts can be 
 - the number of alert notifications can be lower than the actual number of currently searchable flights
 - there is often a delay between when availability appears in the Seats.aero database and when an alert is sent
 
-This tool exists to reduce that gap. RewardsTicket actively polls Seats.aero data with your criteria so you can detect availability changes earlier than the default broadcast alert timing. I built this tool with two core assumption:
+This tool exists to reduce that gap. PULSE actively polls Seats.aero data with your criteria so you can detect availability changes earlier than the default broadcast alert timing. I built this tool with two core assumption:
 
 - Seats.aero native alerts are sometimes unreliable and missing valid trips
 - proactive polling can surface opportunities before broad alerts reach everyone
@@ -26,7 +26,7 @@ This tool exists to reduce that gap. RewardsTicket actively polls Seats.aero dat
   - destination airports
   - start/end date
   - cabin
-  - direct-flights-only toggle
+  - direct-flights-only (fixed ON in current release)
   - max mileage cap
 - Run an **off-cycle query** immediately when you do not want to wait. `Off-cycle Run` is manual and does not send email.
 - Keep a **local run history** so you can compare snapshots.
@@ -41,11 +41,19 @@ This tool exists to reduce that gap. RewardsTicket actively polls Seats.aero dat
 
 ## Quick Start
 
-- Clone and enter the project
+- Fork this repository to your own GitHub account (recommended for customization/contribution).
+- Then clone your fork:
 
 ```bash
-git clone <your-repo-url>
-cd RewardsTicket
+git clone https://github.com/<your-username>/PULSE.git
+cd PULSE
+```
+
+- If you only want local usage and do not plan to contribute, direct clone is also fine:
+
+```bash
+git clone https://github.com/gitacoco/PULSE.git
+cd PULSE
 ```
 
 - Rename the `.env.example` file to `.env`
