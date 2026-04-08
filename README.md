@@ -19,29 +19,21 @@ This tool exists to reduce that gap. RewardsTicket actively polls Seats.aero dat
 1. Seats.aero API access is required. This tool depends on the Seats.aero Partner API. API access is available to Seats.aero Pro users, so each user needs their own paid access.
 2. If you would like to have auto email alerts, you will need  a Google App Password. To generate a Google app-specific password, you'll have to enable 2-Step Verification in your Google account, then create an app password here via this link [Create and manage your app passwords.](https://myaccount.google.com/apppasswords)The  16-character password value should be placed into our .env file.
 
-## What Problems It Solves
-
-- Run an **off-cycle query** immediately when you do not want to wait.
-- Keep a **local run history** so you can compare snapshots.
-- Apply **program filters** and date sorting in results.
-- Configure a **next query** profile and reuse criteria quickly.
-- Send HTML email alerts from your own SMTP setup.
-
 ## Current Features
 
-- Query criteria supp:
+- Query criteria:
   - origin airports
   - destination airports
   - start/end date
   - cabin
   - direct-flights-only toggle
-  - max mileage
-- Past query snapshots
-- Next query section (interval + re-apply)
-- Program filter and date sorting in results
-- HTML email alert&#x20;
+  - max mileage cap
+- Run an **off-cycle query** immediately when you do not want to wait.
+- Keep a **local run history** so you can compare snapshots.
+- Configure a **next query** profile and reuse criteria quickly.
+- Apply **program filters** and date sorting in results.
+- Send HTML email alerts from your own SMTP setup.&#x20;
 
->
 > This app is intentionally opinionated and built around my personal workflow.
 > For example: direct flights only, business-cabin focus, and no support for creating multiple query tasks at the same time.
 > Since this project is open source, you can extend it based on the Seats.aero API documentation for your own needs.
@@ -57,6 +49,16 @@ This tool exists to reduce that gap. RewardsTicket actively polls Seats.aero dat
 - `ui/index.html`: UI (HTML/CSS/JS)
 - `data/store.json`: local persistence
 - `.env`: runtime secrets/config (not committed)
+
+## Runtime Environment (Important)
+
+- This is **not** a hosted web app/SaaS.
+- It is a **local-first monitoring service**:
+  - a long-running Python process (`app.py`)
+  - plus a browser UI served at `http://127.0.0.1:8787`
+- To keep monitoring reliable, run it on an always-on machine.
+- Recommended environment: a non-sleeping local machine such as a **Mac mini**.
+- Locking the screen is fine, but system sleep will pause the process.
 
 ## Quick Start
 
@@ -80,7 +82,8 @@ cp .env.example .env
 python3 app.py
 ```
 
-- Open the local url
+- Open the local url:
+- `http://127.0.0.1:8787`
 
 ## Environment Variables
 
@@ -111,13 +114,7 @@ Before publishing this repo:
 - No multi-user auth model
 - Scheduling model is currently local-process oriented
 
-## Roadmap Ideas
-
-- Deduplicated alert emails
-- Optional database backend (SQLite/Postgres)
-- Docker packaging
-- Improved scheduler/worker deployment mode
-
 ## License
 
-Use your preferred license (MIT is a common choice).
+This project is licensed under the MIT License.
+See [LICENSE](./LICENSE) for details.
