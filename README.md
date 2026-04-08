@@ -1,6 +1,8 @@
 # PULSE (Polling Unlocks Live Seat Exposure)
 A focused award-seat monitoring tool built around the Seats.aero [Partner API](https://docs.seats.aero/article/68-seatsaero-pro-api-access-limits-and-usage).
 
+![PULSE Demo](https://github.com/user-attachments/assets/d7a7e20e-e181-4946-bde3-6e9401afc130)
+
 ## Why This Exists
 
 I'm a pro user of seats.aero. Based on real usage, I've found that seats.aero alerts can be unreliable in some ways:
