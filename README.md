@@ -24,7 +24,7 @@ This tool exists to reduce that gap. PULSE actively polls Seats.aero data with y
 
 > This app is intentionally opinionated and built around my personal workflow.
 > For example: direct flights only, business-cabin focus, and no support for creating multiple query tasks at the same time.
-> Since this project is open source, you can extend it based on the Seats.aero API documentation for your own needs.
+> Since this project is open source, you may extend it based on the Seats.aero API documentation for your own needs.
 
 - Query criteria:
   - origin airports
@@ -71,14 +71,13 @@ cp .env.example .env
 python3 app.py
 ```
 
-- Open the local url:
-- `http://127.0.0.1:8787`
+- Open the local url: `http://127.0.0.1:8787`
 
 ## Project Structure
 
 - `app.py`: Python backend + API routes + Seats query + email sender
-- `ui/index.html`: UI (HTML/CSS/JS)
-- `data/store.json`: local persistence. The app auto-creates this file at startup.
+- `ui/index.html`: GUI (HTML/CSS/JS)
+- `data/store.json`: local persistence. The app auto-creates this file at startup (not committed)
 - `.env`: runtime secrets/config (not committed)
 
 ## Runtime Environment
