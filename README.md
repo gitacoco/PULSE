@@ -42,6 +42,7 @@ This tool exists to reduce that gap. RewardsTicket actively polls Seats.aero dat
 
 - `Off-cycle Run` is manual and **does not send email by default**.
 - Data is persisted in local file: `data/store.json`.
+- If `data/store.json` is missing, the app auto-creates it at startup.
 
 ## Project Structure
 
@@ -99,14 +100,12 @@ python3 app.py
 | `SMTP_TLS`         |  Optional | `true/false` (default inferred from port) |
 | `SMTP_SSL`         |  Optional | `true/false` (default inferred from port) |
 
-## Open-Source Safety Checklist
+## Safety Checklist
 
-Before publishing this repo:
+If you plan to publish the repo, be sure to:
 
-- Rotate any existing API/SMTP credentials.
 - Confirm `.env` is ignored by git.
-- Commit only `.env.example`, never real `.env`.
-- Consider rewriting git history if secrets were ever committed.
+- Confirm `store.json`is ignored by git.
 
 ## Known Limitations
 
