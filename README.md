@@ -10,10 +10,7 @@ I'm a pro user of seats.aero. Based on real usage, I've found that seats.aero al
 - the number of alert notifications can be lower than the actual number of currently searchable flights
 - there is often a delay between when availability appears in the Seats.aero database and when an alert is sent
 
-This tool exists to reduce that gap. PULSE actively polls Seats.aero data with your criteria so you can detect availability changes earlier than the default broadcast alert timing. I built this tool with two core assumption:
-
-- Seats.aero native alerts are sometimes unreliable and missing valid trips
-- proactive polling can surface opportunities before broad alerts reach everyone
+This tool exists to reduce that gap. PULSE actively polls Seats.aero data with your criteria proactively so you can detect availability changes earlier than broad alerts reach everyone, this is my assumption though.
 
 ## Before You Start
 
@@ -22,9 +19,9 @@ This tool exists to reduce that gap. PULSE actively polls Seats.aero data with y
 
 ## Current Features
 
-> This app is intentionally opinionated and built around my personal workflow.
+> This app is very opinionated and built around my personal workflow.
 > For example: direct flights only, business-cabin focus, and no support for creating multiple query tasks at the same time.
-> Since this project is open source, you may extend it based on the Seats.aero API documentation for your own needs.
+> Since this project is open source, feel free to extend/customize it based on the Seats.aero API documentation for your own needs.
 
 - Query criteria:
   - origin airports
@@ -35,10 +32,9 @@ This tool exists to reduce that gap. PULSE actively polls Seats.aero data with y
   - max mileage cap
 - Run an **off-cycle query** immediately when you do not want to wait. `Off-cycle Run` is manual and does not send email.
 - Keep a **local run history** so you can compare data snapshots.
-- Configure a **next query** profile and reuse criteria quickly.
+- Apply any criteria changes quickly to the auto run profile.
 - Apply **program filters** and date sorting in results.
-- Send HTML email alerts from your own SMTP setup.
-- Email dedupe rule: an email is sent only when the current run has a higher hit count and includes newly added results versus the previous comparable run (same params + max mileage). If results are fewer or unchanged, no email is sent.
+- Send email alerts from your own SMTP setup. Email dedupe rule: an email is sent only when the current run has a higher hit count and includes newly added results versus the previous comparable run (same params + max mileage). If results are fewer or unchanged, no email is sent.
 
 
 ## Quick Start
