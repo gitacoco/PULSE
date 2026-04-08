@@ -3,7 +3,7 @@ A focused award-seat monitoring tool built around the Seats.aero [Partner API](h
 
 ## Why This Exists
 
-I'm a pro user of seats.aero. But based on real usage, Seats.aero alerts can be unreliable in two important ways:
+I'm a pro user of seats.aero. Based on real usage, I've found that seats.aero alerts can be unreliable in some ways:
 
 - the number of alert notifications can be lower than the actual number of currently searchable flights
 - there is often a delay between when availability appears in the Seats.aero database and when an alert is sent
