@@ -57,7 +57,7 @@ cd PULSE
 - Rename the `.env.example` file to `.env`
 
 ```bash
-cp .env.example .env
+mv .env.example .env
 ```
 
 - Fill in your values
