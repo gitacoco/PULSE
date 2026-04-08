@@ -1,7 +1,7 @@
 # PULSE (Polling Unlocks Live Seat Exposure)
 A focused award-seat monitoring tool built around the Seats.aero [Partner API](https://docs.seats.aero/article/68-seatsaero-pro-api-access-limits-and-usage).
 
-![PULSE Demo](https://github.com/user-attachments/assets/7abeb618-e587-463b-844d-08a60d7c82cf)
+![PULSE Demo](https://github.com/user-attachments/assets/279199d2-5b6e-4d03-a339-fb9feb47de9e)
 
 ## Why This Exists
 
