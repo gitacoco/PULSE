@@ -410,6 +410,8 @@ class Handler(BaseHTTPRequestHandler):
                 payload = self._read_json_body()
                 params = payload.get("params") or default_params()
                 max_mileage = int(payload.get("max_mileage", 100000))
+                # Off-cycle runs from UI should not email unless explicitly requested.
+                send_email = bool(payload.get("send_email", False))
                 api_response = run_seats_query(params)
                 hits = extract_hits(api_response, max_mileage=max_mileage)
                 rows = api_response.get("data", []) if isinstance(api_response, dict) else []
@@ -429,7 +431,7 @@ class Handler(BaseHTTPRequestHandler):
 
                 email_sent = False
                 email_error = None
-                if record["total_hits"] > 0:
+                if send_email and record["total_hits"] > 0:
                     try:
                         send_alert_email(record)
                         email_sent = True
@@ -491,6 +493,31 @@ class Handler(BaseHTTPRequestHandler):
 
                 write_store(data)
                 self._send_json({"ok": True, "deleted_id": schedule_id})
+                return
+            except Exception as exc:
+                self._send_json({"error": str(exc)}, status=400)
+                return
+
+        if self.path == "/api/query/delete":
+            try:
+                payload = self._read_json_body()
+                query_id = (payload.get("id") or "").strip()
+                if not query_id:
+                    self._send_json({"error": "Missing query id"}, status=400)
+                    return
+
+                data = read_store()
+                before = len(data["past_queries"])
+                data["past_queries"] = [
+                    q for q in data["past_queries"] if q.get("id") != query_id
+                ]
+                after = len(data["past_queries"])
+                if before == after:
+                    self._send_json({"error": "Past query not found"}, status=404)
+                    return
+
+                write_store(data)
+                self._send_json({"ok": True, "deleted_id": query_id})
                 return
             except Exception as exc:
                 self._send_json({"error": str(exc)}, status=400)

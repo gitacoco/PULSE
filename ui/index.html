@@ -24,7 +24,7 @@
     html,
     body {
       margin: 0;
-      min-height: 100%;
+      height: 100%;
       font-family: "SF Pro Display", "SF Pro Text", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       color: var(--text);
       background: var(--bg);
@@ -32,11 +32,12 @@
 
     body {
       padding: 0;
+      overflow: hidden;
     }
 
     .shell {
       width: 100%;
-      min-height: 100vh;
+      height: 100vh;
       display: flex;
       flex-direction: column;
     }
@@ -69,19 +70,64 @@
       flex: 1;
       min-height: 0;
       align-items: stretch;
+      overflow: hidden;
     }
 
     .left-column {
-      display: grid;
-      grid-template-rows: auto auto 1fr;
+      display: flex;
+      flex-direction: column;
       width: 320px;
       border-right: 1px solid var(--line);
-      min-height: 100%;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .left-column > section.panel:first-child {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      min-height: 0;
+    }
+
+    .left-column > section.panel:first-child .panel-body {
+      flex: 1;
+      min-height: 0;
+    }
+
+    .left-column > section.panel:first-child .list {
+      height: 100%;
+      max-height: none;
+    }
+
+    /* Past panel consumes remaining height after Next Query + Query Criteria */
+    #upcomingPanel,
+    #criteriaPanel {
+      flex: 0 0 auto;
     }
 
     .panel {
       background: #fff;
       border-bottom: 1px solid var(--line);
+    }
+
+    /* Remove section underlines for the four main panels */
+    .left-column > section.panel:first-child,
+    #upcomingPanel,
+    #criteriaPanel,
+    .result-panel {
+      border-bottom: 0;
+    }
+
+    #upcomingPanel,
+    #criteriaPanel {
+      border-top: 1px solid var(--line);
+    }
+
+    .left-column > section.panel:first-child > .panel-header,
+    #upcomingPanel > .panel-header,
+    #criteriaPanel > .panel-header,
+    .result-panel > .panel-header {
+      border-bottom: 0;
     }
 
     .left-column .panel:last-child {
@@ -94,9 +140,10 @@
 
     .result-panel {
       border-bottom: 0;
-      min-height: 100%;
+      min-height: 0;
       display: flex;
       flex-direction: column;
+      overflow: hidden;
     }
 
     .panel-header {
@@ -105,6 +152,10 @@
       align-items: center;
       border-bottom: 1px solid var(--line);
       padding: 10px 12px;
+    }
+
+    .panel-header.collapsible-header {
+      cursor: pointer;
     }
 
     .panel-header-left {
@@ -162,6 +213,8 @@
     main.shell > section.layout > aside.left-column > section.panel:first-child > div.panel-header {
       padding-left: 14px;
       padding-right: 14px;
+      padding-top: 10px;
+      padding-bottom: 4px;
     }
 
     /* Element 2: Past Queries body */
@@ -174,12 +227,16 @@
     section#upcomingPanel > div.panel-header {
       padding-left: 14px;
       padding-right: 14px;
+      padding-top: 6px;
+      padding-bottom: 6px;
     }
 
     /* Element 4: Query Criteria header */
     section#criteriaPanel > div.panel-header {
       padding-left: 14px;
       padding-right: 14px;
+      padding-top: 6px;
+      padding-bottom: 6px;
     }
 
     /* Element 5: Query Criteria body */
@@ -206,17 +263,18 @@
     main.shell > section.layout > section.panel > div.panel-header {
       padding-left: 14px;
       padding-right: 14px;
+      padding-top: 10px;
+      padding-bottom: 4px;
     }
 
     .list {
-      max-height: 220px;
       overflow: auto;
       padding-right: 2px;
     }
 
     .query-item {
       border-bottom: 0;
-      padding: 8px 32px 8px 4px;
+      padding: 8px 28px 8px 4px;
       background: #fff;
       cursor: pointer;
       transition: background-color 0.12s ease;
@@ -242,16 +300,41 @@
       color: #111111;
     }
 
-    .query-check {
-      width: 16px;
-      height: 16px;
-      border-radius: 999px;
-      border: 1.5px solid var(--line-strong);
-      background: #fff;
+    .delete-past-btn {
       position: absolute;
       right: 8px;
       top: 50%;
       transform: translateY(-50%);
+      border: 0;
+      background: transparent;
+      color: var(--muted);
+      width: 16px;
+      height: 16px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 2px;
+      cursor: pointer;
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+      transition: opacity 0.12s ease;
+    }
+
+    #pastList .query-item:hover .delete-past-btn,
+    #pastList .query-item:focus-within .delete-past-btn {
+      opacity: 1;
+      visibility: visible;
+      pointer-events: auto;
+    }
+
+    .delete-past-btn:hover {
+      color: var(--danger);
+    }
+
+    .delete-past-btn .trash-icon {
+      width: 14px;
+      height: 14px;
     }
 
     .next-query-wrap {
@@ -295,6 +378,14 @@
 
     .next-query-input {
       width: 56px;
+      appearance: textfield;
+      -moz-appearance: textfield;
+    }
+
+    .next-query-input::-webkit-outer-spin-button,
+    .next-query-input::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
     }
 
     .inline-apply {
@@ -317,23 +408,6 @@
     .text-btn:disabled {
       color: var(--muted);
       cursor: default;
-    }
-
-    .query-item.selected .query-check {
-      border-color: #111111;
-      background: #111111;
-    }
-
-    .query-item.selected .query-check::after {
-      content: "✓";
-      position: absolute;
-      left: 50%;
-      top: 50%;
-      transform: translate(-50%, -58%);
-      font-size: 11px;
-      line-height: 1;
-      color: #ffffff;
-      font-weight: 700;
     }
 
     .query-meta {
@@ -366,6 +440,16 @@
       font-weight: 600;
     }
 
+    .chip.running {
+      color: #374151;
+      font-weight: 500;
+    }
+
+    .chip.failed {
+      color: #991b1b;
+      font-weight: 500;
+    }
+
     .ghost-btn,
     .primary-btn {
       width: 100%;
@@ -396,6 +480,15 @@
       color: #111111;
       border-radius: 4px;
       font-weight: 500;
+    }
+
+    #applyCriteriaBtn {
+      width: 100%;
+      padding: 9px 10px;
+      font-size: 12px;
+      line-height: 1;
+      margin-top: 8px;
+      cursor: pointer;
     }
 
     .hidden {
@@ -511,7 +604,7 @@
 
     .toast {
       position: fixed;
-      top: 14px;
+      bottom: 14px;
       right: 14px;
       z-index: 9999;
       min-width: 220px;
@@ -563,6 +656,30 @@
 
     .program-header-cell {
       position: relative;
+    }
+
+    .date-header-cell {
+      position: relative;
+    }
+
+    .date-sort-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      border: 0;
+      background: transparent;
+      color: inherit;
+      font: inherit;
+      font-weight: 500;
+      text-transform: inherit;
+      letter-spacing: inherit;
+      padding: 0;
+      cursor: pointer;
+    }
+
+    .date-sort-icon {
+      width: 14px;
+      height: 14px;
     }
 
     .program-filter-toggle {
@@ -719,7 +836,7 @@
         </section>
 
         <section class="panel" id="upcomingPanel">
-          <div class="panel-header">
+          <div class="panel-header collapsible-header" data-toggle-target="upcomingBody" role="button" tabindex="0" aria-expanded="true">
             <div class="panel-header-left">
               <h2 class="panel-title">Next Query</h2>
             </div>
@@ -735,7 +852,7 @@
         </section>
 
         <section class="panel" id="criteriaPanel">
-          <div class="panel-header">
+          <div class="panel-header collapsible-header" data-toggle-target="criteriaBody" role="button" tabindex="0" aria-expanded="true">
             <div class="panel-header-left">
               <h2 class="panel-title">Query Criteria</h2>
             </div>
@@ -771,7 +888,7 @@
                   </div>
                   <div>
                     <label>Max Mileage</label>
-                    <input id="maxMileage" type="number" value="100000" />
+                    <input id="maxMileage" type="text" inputmode="numeric" value="100,000" />
                   </div>
                 </div>
                 <div class="toggle-row">
@@ -782,11 +899,11 @@
                   </label>
                 </div>
               </div>
+              <button id="applyCriteriaBtn" class="secondary-btn hidden" type="button" style="margin-top:8px;">
+                Apply Criteria to Next Query
+              </button>
               <button class="primary-btn" type="submit">Off-cycle Run</button>
             </form>
-            <button id="applyCriteriaBtn" class="secondary-btn hidden" type="button" style="margin-top:8px;">
-              Apply Criteria to Next Query
-            </button>
           </div>
         </section>
       </aside>
@@ -799,7 +916,12 @@
         </div>
         <div class="panel-body">
           <div class="result-columns">
-            <div>Date</div>
+            <div class="date-header-cell">
+              <button id="dateSortToggle" class="date-sort-toggle" type="button" aria-label="Sort by date">
+                <span>Date</span>
+                <i data-lucide="arrow-up-down" class="date-sort-icon" aria-hidden="true"></i>
+              </button>
+            </div>
             <div class="program-header-cell">
               <button id="programFilterToggle" class="program-filter-toggle" type="button" aria-haspopup="true" aria-expanded="false">
                 <span>Program</span>
@@ -832,6 +954,7 @@
       selectedPrograms: [],
       programMenuOpen: false,
       criteriaBaseline: null,
+      dateSortOrder: "asc",
     };
     let toastTimer = null;
 
@@ -949,6 +1072,55 @@
       return raw.charAt(0).toUpperCase() + raw.slice(1).toLowerCase();
     }
 
+    function sanitizeIntegerInput(el) {
+      if (!el) return;
+      el.value = String(el.value || "").replace(/[^\d]/g, "");
+    }
+
+    function parseIntegerString(value, fallback = 0) {
+      const raw = String(value || "").replace(/[^\d]/g, "");
+      if (!raw) return fallback;
+      const n = Number(raw);
+      return Number.isFinite(n) ? n : fallback;
+    }
+
+    function formatIntegerWithCommas(value) {
+      const n = parseIntegerString(value, 0);
+      return n ? n.toLocaleString() : "";
+    }
+
+    function initMaxMileageInput() {
+      const el = document.getElementById("maxMileage");
+      if (!el) return;
+      const normalize = () => {
+        el.value = formatIntegerWithCommas(el.value || "0");
+      };
+      el.addEventListener("input", () => {
+        const before = el.selectionStart || 0;
+        const rawLeft = String(el.value || "").slice(0, before).replace(/[^\d]/g, "").length;
+        el.value = formatIntegerWithCommas(el.value);
+        let pos = 0;
+        let digitsSeen = 0;
+        while (pos < el.value.length && digitsSeen < rawLeft) {
+          if (/\d/.test(el.value[pos])) digitsSeen += 1;
+          pos += 1;
+        }
+        el.setSelectionRange(pos, pos);
+      });
+      el.addEventListener("blur", normalize);
+      normalize();
+    }
+
+    function dateSortValue(raw) {
+      if (!raw) return Number.MAX_SAFE_INTEGER;
+      if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+        const d = new Date(`${raw}T00:00:00`);
+        return Number.isNaN(d.getTime()) ? Number.MAX_SAFE_INTEGER : d.getTime();
+      }
+      const d = new Date(raw);
+      return Number.isNaN(d.getTime()) ? Number.MAX_SAFE_INTEGER : d.getTime();
+    }
+
     function parseBooleanish(value, fallback = false) {
       if (typeof value === "boolean") return value;
       if (typeof value === "string") {
@@ -1056,6 +1228,22 @@
         return;
       }
 
+      if (record.is_running) {
+        state.availablePrograms = [];
+        state.selectedPrograms = [];
+        renderProgramFilterMenu();
+        flightList.innerHTML = '<div class="empty">Running query...</div>';
+        return;
+      }
+
+      if (record.is_failed) {
+        state.availablePrograms = [];
+        state.selectedPrograms = [];
+        renderProgramFilterMenu();
+        flightList.innerHTML = `<div class="empty">Run failed: ${record.error_message || "Unknown error"}</div>`;
+        return;
+      }
+
       syncSelectedPrograms(uniquePrograms(record.hits || []), false);
       renderProgramFilterMenu();
 
@@ -1070,7 +1258,13 @@
         return;
       }
 
-      flightList.innerHTML = filteredHits
+      const sortedHits = [...filteredHits].sort((a, b) => {
+        const av = dateSortValue(a.date);
+        const bv = dateSortValue(b.date);
+        return state.dateSortOrder === "asc" ? av - bv : bv - av;
+      });
+
+      flightList.innerHTML = sortedHits
         .map((h) => `
             <article class="flight-card">
               <div class="flight-row">
@@ -1096,22 +1290,74 @@
       root.innerHTML = state.past
         .map((q) => {
           const selected = state.selectedId === q.id ? "selected" : "";
+          const runningChip = q.is_running ? `<span class="chip running">running...</span>` : "";
+          const failedChip = q.is_failed ? `<span class="chip failed">failed</span>` : "";
+          const hitsChip = !q.is_running ? `<span class="chip hit">${q.total_hits} hits</span>` : "";
+          const deleteBtn = q.is_running
+            ? ""
+            : `<button class="delete-past-btn" type="button" data-id="${q.id}" aria-label="Delete past query">
+                <i data-lucide="trash-2" class="trash-icon" aria-hidden="true"></i>
+              </button>`;
           return `
             <div class="query-item ${selected}" data-id="${q.id}">
               <div class="query-meta">
                 <span>${formatDate(q.created_at)}</span>
               </div>
               <div class="chips">
-                <span class="chip hit">${q.total_hits} hits</span>
+                ${hitsChip}
+                ${runningChip}
+                ${failedChip}
               </div>
-              <span class="query-check" aria-hidden="true"></span>
+              ${deleteBtn}
             </div>
           `;
         })
         .join("");
       document.querySelectorAll(".query-item[data-id]").forEach((item) => {
-        item.addEventListener("click", () => showResult(item.dataset.id));
+        item.addEventListener("click", () => {
+          const id = item.dataset.id;
+          if (!id) return;
+          if (id.startsWith("pending-") || id.startsWith("failed-")) {
+            state.selectedId = id;
+            renderCurrentSelectedResult();
+            return;
+          }
+          showResult(id);
+        });
       });
+      document.querySelectorAll(".delete-past-btn[data-id]").forEach((btn) => {
+        btn.addEventListener("click", async (e) => {
+          e.stopPropagation();
+          const id = btn.getAttribute("data-id");
+          if (!id) return;
+          const res = await fetch("/api/query/delete", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ id }),
+          });
+          const data = await res.json();
+          if (data.error) {
+            setStatus(`Delete error: ${data.error}`, "error");
+            return;
+          }
+          state.past = state.past.filter((q) => q.id !== id);
+          if (state.selectedId === id) {
+            state.selectedId = state.past.length ? state.past[0].id : null;
+            state.selectedPrograms = [];
+            state.availablePrograms = [];
+          }
+          renderPast();
+          if (state.selectedId) {
+            renderFlightCards(getSelectedRecord());
+          } else {
+            renderFlightCards(null);
+          }
+          setStatus("Past query deleted.", "ok");
+        });
+      });
+      if (window.lucide && typeof window.lucide.createIcons === "function") {
+        window.lucide.createIcons();
+      }
     }
 
     function renderUpcoming() {
@@ -1127,7 +1373,7 @@
           </div>
           <div class="next-query-control">
             <span class="next-query-label">Running every</span>
-            <input class="next-query-input" id="nextQueryInterval" type="number" value="${intervalValue}" min="1" />
+            <input class="next-query-input" id="nextQueryInterval" type="text" inputmode="numeric" pattern="[0-9]*" value="${intervalValue}" />
             <span class="next-query-label">minutes</span>
             <span class="next-query-spacer" aria-hidden="true"></span>
             <button id="confirmNextQueryBtn" class="text-btn inline-apply" type="button" disabled>Re-apply</button>
@@ -1140,8 +1386,9 @@
       if (confirmBtn && intervalInput) {
         const baselineInterval = Number(intervalValue);
         const syncApplyState = () => {
+          sanitizeIntegerInput(intervalInput);
           const val = Number(intervalInput.value);
-          const valid = Number.isFinite(val) && val > 0;
+          const valid = /^\d+$/.test(intervalInput.value) && Number.isFinite(val) && val > 0;
           confirmBtn.disabled = !(valid && val !== baselineInterval);
         };
         intervalInput.addEventListener("input", syncApplyState);
@@ -1149,7 +1396,12 @@
         syncApplyState();
 
         confirmBtn.addEventListener("click", async () => {
-          const val = Number(intervalInput.value || 60);
+          sanitizeIntegerInput(intervalInput);
+          if (!/^\d+$/.test(intervalInput.value)) {
+            setStatus("Interval must be numeric.", "error");
+            return;
+          }
+          const val = Number(intervalInput.value);
           if (!Number.isFinite(val) || val <= 0) {
             setStatus("Interval must be greater than 0.", "error");
             return;
@@ -1250,10 +1502,34 @@
 
     document.getElementById("runForm").addEventListener("submit", async (e) => {
       e.preventDefault();
+      const params = queryParamsFromForm();
+      const maxMileage = parseIntegerString(document.getElementById("maxMileage").value, 100000);
+      if (!Number.isFinite(maxMileage) || maxMileage <= 0) {
+        setStatus("Max Mileage must be a positive number.", "error");
+        return;
+      }
+      const pendingId = `pending-${Date.now()}`;
+      const pendingRecord = {
+        id: pendingId,
+        created_at: new Date().toISOString(),
+        params,
+        max_mileage: maxMileage,
+        total_returned: 0,
+        total_hits: 0,
+        hits: [],
+        is_running: true,
+      };
+
+      state.past.unshift(pendingRecord);
+      state.selectedId = pendingId;
+      state.selectedPrograms = [];
+      state.availablePrograms = [];
+      renderCurrentSelectedResult();
+
       setStatus("Running query...", "");
       const body = {
-        params: queryParamsFromForm(),
-        max_mileage: Number(document.getElementById("maxMileage").value || 100000),
+        params,
+        max_mileage: maxMileage,
       };
       const res = await fetch("/api/query/run", {
         method: "POST",
@@ -1262,12 +1538,30 @@
       });
       const data = await res.json();
       if (data.error) {
+        state.past = state.past.map((q) =>
+          q.id === pendingId
+            ? {
+                ...q,
+                id: `failed-${Date.now()}`,
+                is_running: false,
+                is_failed: true,
+                error_message: data.error,
+              }
+            : q
+        );
+        if (state.selectedId === pendingId) {
+          const failed = state.past.find((q) => q.is_failed && q.error_message === data.error);
+          if (failed) {
+            state.selectedId = failed.id;
+          }
+        }
+        renderCurrentSelectedResult();
         setStatus(`Error: ${data.error}`, "error");
         return;
       }
+      state.past = state.past.map((q) => (q.id === pendingId ? data : q));
       setStatus(`Done. ${data.total_hits} matching flights found.`, "ok");
       state.selectedId = data.id;
-      state.past.unshift(data);
       state.selectedPrograms = [];
       state.availablePrograms = [];
       renderCurrentSelectedResult();
@@ -1283,6 +1577,11 @@
       renderProgramFilterMenu();
     });
 
+    document.getElementById("dateSortToggle").addEventListener("click", () => {
+      state.dateSortOrder = state.dateSortOrder === "asc" ? "desc" : "asc";
+      renderCurrentSelectedResult();
+    });
+
     document.addEventListener("click", (e) => {
       const menu = document.getElementById("programFilterMenu");
       const toggle = document.getElementById("programFilterToggle");
@@ -1294,18 +1593,43 @@
       renderProgramFilterMenu();
     });
 
+    function togglePanelByTarget(targetId) {
+      const body = document.getElementById(targetId);
+      if (!body) return;
+      const panel = body.closest(".panel");
+      const willCollapse = !body.classList.contains("is-collapsed");
+      body.classList.toggle("is-collapsed", willCollapse);
+      if (panel) {
+        panel.classList.toggle("is-panel-collapsed", willCollapse);
+      }
+      const expanded = willCollapse ? "false" : "true";
+      const btn = document.querySelector(`.collapse-btn[data-toggle-target="${targetId}"]`);
+      if (btn) btn.setAttribute("aria-expanded", expanded);
+      const header = document.querySelector(`.panel-header[data-toggle-target="${targetId}"]`);
+      if (header) header.setAttribute("aria-expanded", expanded);
+    }
+
     document.querySelectorAll(".collapse-btn").forEach((btn) => {
-      btn.addEventListener("click", () => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
         const targetId = btn.getAttribute("data-toggle-target");
-        const body = document.getElementById(targetId);
-        const panel = btn.closest(".panel");
-        if (!body) return;
-        const willCollapse = !body.classList.contains("is-collapsed");
-        body.classList.toggle("is-collapsed", willCollapse);
-        if (panel) {
-          panel.classList.toggle("is-panel-collapsed", willCollapse);
-        }
-        btn.setAttribute("aria-expanded", willCollapse ? "false" : "true");
+        if (!targetId) return;
+        togglePanelByTarget(targetId);
+      });
+    });
+
+    document.querySelectorAll(".panel-header.collapsible-header[data-toggle-target]").forEach((header) => {
+      header.addEventListener("click", () => {
+        const targetId = header.getAttribute("data-toggle-target");
+        if (!targetId) return;
+        togglePanelByTarget(targetId);
+      });
+      header.addEventListener("keydown", (e) => {
+        if (e.key !== "Enter" && e.key !== " ") return;
+        e.preventDefault();
+        const targetId = header.getAttribute("data-toggle-target");
+        if (!targetId) return;
+        togglePanelByTarget(targetId);
       });
     });
 
@@ -1313,6 +1637,7 @@
       window.lucide.createIcons();
     }
 
+    initMaxMileageInput();
     attachCriteriaChangeWatchers();
     loadState();
   </script>
