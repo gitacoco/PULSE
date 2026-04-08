@@ -527,6 +527,7 @@
       width: 34px;
       height: 20px;
       flex: 0 0 auto;
+      cursor: default;
     }
 
     .switch input {
@@ -562,6 +563,10 @@
 
     .switch input:checked + .switch-slider::before {
       transform: translateX(14px);
+    }
+
+    .switch input:disabled + .switch-slider {
+      opacity: 1;
     }
 
     label {
@@ -894,7 +899,7 @@
                 <div class="toggle-row">
                   <span class="toggle-label">Direct Flights Only</span>
                   <label class="switch" for="onlyDirectFlights">
-                    <input id="onlyDirectFlights" type="checkbox" checked />
+                    <input id="onlyDirectFlights" type="checkbox" checked disabled />
                     <span class="switch-slider"></span>
                   </label>
                 </div>
@@ -1010,7 +1015,6 @@
     }
 
     function queryParamsFromForm() {
-      const onlyDirect = document.getElementById("onlyDirectFlights");
       const cabinValue = (document.getElementById("cabin").value || "").trim();
       return {
         origin_airport: serializeAirportCsv(document.getElementById("origin").value),
@@ -1018,7 +1022,7 @@
         start_date: document.getElementById("startDate").value,
         end_date: document.getElementById("endDate").value,
         cabin: cabinValue ? cabinValue.toLowerCase() : "business",
-        only_direct_flights: onlyDirect && onlyDirect.checked ? "true" : "false",
+        only_direct_flights: "true",
         order_by: "lowest_mileage",
         take: "200",
       };
@@ -1032,7 +1036,7 @@
         start_date: p.start_date || "",
         end_date: p.end_date || "",
         cabin: String(p.cabin || "business").toLowerCase(),
-        only_direct_flights: parseBooleanish(p.only_direct_flights, true) ? "true" : "false",
+        only_direct_flights: "true",
         order_by: p.order_by || "lowest_mileage",
         take: String(p.take || "200"),
       };
@@ -1054,7 +1058,7 @@
     }
 
     function attachCriteriaChangeWatchers() {
-      const ids = ["origin", "destination", "startDate", "endDate", "cabin", "onlyDirectFlights"];
+      const ids = ["origin", "destination", "startDate", "endDate", "cabin"];
       ids.forEach((id) => {
         const el = document.getElementById(id);
         if (!el) return;
@@ -1485,7 +1489,7 @@
       document.getElementById("cabin").value = formatCabinDisplay(d.cabin || "business");
       const onlyDirect = document.getElementById("onlyDirectFlights");
       if (onlyDirect) {
-        onlyDirect.checked = parseBooleanish(d.only_direct_flights, true);
+        onlyDirect.checked = true;
       }
       renderPast();
       renderUpcoming();

@@ -11,30 +11,13 @@ I'm a pro user of seats.aero. But based on real usage, Seats.aero alerts can be 
 
 This tool exists to reduce that gap. RewardsTicket actively polls Seats.aero data with your criteria so you can detect availability changes earlier than the default broadcast alert timing. I built this tool with two core assumption:
 
-- Seats.aero native alerts are sometimes unreliable/unstable for time-sensitive booking workflows
+- Seats.aero native alerts are sometimes unreliable and missing valid trips
 - proactive polling can surface opportunities before broad alerts reach everyone
 
 ## Before You Start
 
-1. Seats.aero API access is required.
-
-- This tool depends on the Seats.aero Partner API.
-- API access is available to Seats.aero Pro users, so each user needs their own paid access.
-
-1. Gmail auto-email requires a Google App Password.
-
-- To use automatic email sending from this tool, generate a Google app-specific password.
-- Prerequisite: enable 2-Step Verification in your Google account:
-  - `Google Account > Security & sign-in > 2-Step Verification`
-- Then create a 16-character app password here:
-  - [Create and manage your app passwords](https://myaccount.google.com/apppasswords)
-- Put that 16-character value into:
-  - `.env` -> `SMTP_PASS=...`
-
-1. Query model and assumption.
-
-- This tool uses the Seats.aero API to poll their [Cached Search](https://developers.seats.aero/reference/cached-search) more frequently.
-- Working assumption: this polling approach is more reliable for time-sensitive workflows than relying only on native alert delivery timing.
+1. Seats.aero API access is required. This tool depends on the Seats.aero Partner API. API access is available to Seats.aero Pro users, so each user needs their own paid access.
+2. If you would like to have auto email alerts, you will need  a Google App Password. To generate a Google app-specific password, you'll have to enable 2-Step Verification in your Google account, then create an app password here via this link [Create and manage your app passwords.](https://myaccount.google.com/apppasswords)The  16-character password value should be placed into our .env file.
 
 ## What Problems It Solves
 
@@ -46,22 +29,26 @@ This tool exists to reduce that gap. RewardsTicket actively polls Seats.aero dat
 
 ## Current Features
 
-- Query criteria:
+- Query criteria supp:
   - origin airports
   - destination airports
   - start/end date
   - cabin
   - direct-flights-only toggle
   - max mileage
-- Past query snapshots (with delete)
+- Past query snapshots
 - Next query section (interval + re-apply)
 - Program filter and date sorting in results
-- HTML email alert template
+- HTML email alert&#x20;
+
+>
+> This app is intentionally opinionated and built around my personal workflow.
+> For example: direct flights only, business-cabin focus, and no support for creating multiple query tasks at the same time.
+> Since this project is open source, you can extend it based on the Seats.aero API documentation for your own needs.
 
 ## Important Behavior
 
 - `Off-cycle Run` is manual and **does not send email by default**.
-- Email is sent only when backend receives `send_email=true`.
 - Data is persisted in local file: `data/store.json`.
 
 ## Project Structure
@@ -73,29 +60,27 @@ This tool exists to reduce that gap. RewardsTicket actively polls Seats.aero dat
 
 ## Quick Start
 
-1. Clone and enter the project
+- Clone and enter the project
 
 ```bash
 git clone <your-repo-url>
 cd RewardsTicket
 ```
 
-1. Create `.env` from `.env.example`
+- Create `.env` from `.env.example`
 
 ```bash
 cp .env.example .env
 ```
 
-1. Fill in your values (especially `SEATS_API_KEY` and SMTP vars)
-2. Run the app
+- Fill in your values
+- Run the app
 
 ```bash
 python3 app.py
 ```
 
-1. Open:
-
-- `http://127.0.0.1:8787`
+- Open the local url
 
 ## Environment Variables
 
