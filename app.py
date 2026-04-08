@@ -473,7 +473,21 @@ def send_alert_email(record: dict) -> None:
             .replace("'", "&#39;")
         )
 
-    hits = record.get("hits", [])
+    def sort_key_for_hit(hit: dict):
+        raw = (hit or {}).get("date")
+        if not raw:
+            return datetime.max.replace(tzinfo=timezone.utc)
+        dt = _parse_iso_utc(str(raw))
+        if dt is not None:
+            return dt
+        # Date-only fallback, e.g. 2026-04-10
+        try:
+            d = datetime.strptime(str(raw), "%Y-%m-%d").replace(tzinfo=timezone.utc)
+            return d
+        except Exception:
+            return datetime.max.replace(tzinfo=timezone.utc)
+
+    hits = sorted((record.get("hits") or []), key=sort_key_for_hit)
     subject = f"PULSE Alert: {record.get('total_hits', 0)} matching flights"
     created_human = human_time(record.get("created_at", ""))
     lines = [
