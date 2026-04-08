@@ -18,27 +18,28 @@ This tool exists to reduce that gap. PULSE actively polls Seats.aero data with y
 ## Before You Start
 
 1. This tool depends on the Seats.aero Partner API. API access is available to [Seats.aero](https://seats.aero/) Pro users, so each user needs their own paid access.
-2. If you would like to have auto email alerts, you will need  a Google App Password. To generate a Google app-specific password, you'll have to enable 2-Step Verification in your Google account, then create an app password here via this link [Create and manage your app passwords.](https://myaccount.google.com/apppasswords)The  16-character password value should be placed into our .env file.
+2. If you would like to have auto email alerts, you will need  a Google App Password. To generate a Google app-specific password, you'll have to enable 2-Step Verification in your Google account, then create an app password here via this link [Create and manage your app passwords](https://myaccount.google.com/apppasswords). The 16-character password value should be placed into your own `.env` file.
 
 ## Current Features
-
-- Query criteria:
-  - origin airports
-  - destination airports
-  - start/end date
-  - cabin
-  - direct-flights-only (fixed ON in current release)
-  - max mileage cap
-- Run an **off-cycle query** immediately when you do not want to wait. `Off-cycle Run` is manual and does not send email.
-- Keep a **local run history** so you can compare snapshots.
-- Configure a **next query** profile and reuse criteria quickly.
-- Apply **program filters** and date sorting in results.
-- Send HTML email alerts from your own SMTP setup.&#x20;
-- Email dedupe rule: an email is sent only when the current run has a higher hit count and includes newly added results versus the previous comparable run (same params + max mileage). If results are fewer or unchanged, no email is sent.
 
 > This app is intentionally opinionated and built around my personal workflow.
 > For example: direct flights only, business-cabin focus, and no support for creating multiple query tasks at the same time.
 > Since this project is open source, you can extend it based on the Seats.aero API documentation for your own needs.
+
+- Query criteria:
+  - origin airports
+  - destination airports
+  - start/end dates
+  - cabin class (string)
+  - direct-flights-only (fixed ON for my own use)
+  - max mileage cap
+- Run an **off-cycle query** immediately when you do not want to wait. `Off-cycle Run` is manual and does not send email.
+- Keep a **local run history** so you can compare data snapshots.
+- Configure a **next query** profile and reuse criteria quickly.
+- Apply **program filters** and date sorting in results.
+- Send HTML email alerts from your own SMTP setup.
+- Email dedupe rule: an email is sent only when the current run has a higher hit count and includes newly added results versus the previous comparable run (same params + max mileage). If results are fewer or unchanged, no email is sent.
+
 
 ## Quick Start
 
