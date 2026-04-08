@@ -82,13 +82,10 @@ python3 app.py
 
 ## Runtime Environment
 
-- This is **not** a hosted web app/SaaS.
-- It is a **local-first monitoring service**:
+- This is **NOT** a hosted web app/SaaS. It is a **local-first monitoring service**:
   - a long-running Python process (`app.py`)
   - plus a browser UI served at `http://127.0.0.1:8787`
-- To keep monitoring reliable, run it on an always-on machine.
-- Recommended environment: a non-sleeping local machine such as a **Mac mini**.
-- Locking the screen is fine, but system sleep will pause the process.
+- To keep monitoring reliable, run it on an always-on machine. Recommended environment: a non-sleeping local machine such as a **Mac mini**. Locking the screen is fine, but system sleep will pause the process.
 
 ## Environment Variables
 
@@ -106,7 +103,7 @@ python3 app.py
 
 ## Safety Checklist
 
-If you plan to publish the repo, be sure to:
+If you plan to publish your repo, be sure to:
 
 - Confirm `.env` is ignored by git.
 - Confirm `store.json`is ignored by git.
@@ -114,18 +111,15 @@ If you plan to publish the repo, be sure to:
 ## Known Limitations
 
 - Local JSON persistence only (`data/store.json`)
-- No multi-user auth model
 - Scheduling model is currently local-process oriented
 
 ## Refresh Model and Polling Rationale
 
 Based on public comments from the Seats.aero founder and community discussions, the practical refresh threshold for Search / Explore / Alerts is often described as around 3 hours.
 
-Important constraint:
-- This project does **not** bypass Seats.aero data limits.
-- We query the same Seats.aero **Cached Search** layer.
+This project does **not** go beyond Seats.aero data limits. We query the same Seats.aero **Cached Search** layer.
 
-The key uncertainty is timing transparency:
+The key uncertainty of their Cached Search is timing transparency:
 - Seats.aero has not publicly documented exact refresh timestamps.
 - It is unclear whether all programs refresh on one global 3-hour boundary, or in staggered batches.
 
