@@ -756,7 +756,8 @@
       font-weight: 500;
     }
 
-    input {
+    input,
+    select {
       width: 100%;
       padding: 8px 10px;
       border: 0;
@@ -767,7 +768,8 @@
       outline: none;
     }
 
-    input:focus {
+    input:focus,
+    select:focus {
       background: #f3f3f3;
     }
 
@@ -1077,7 +1079,12 @@
                 <div class="form-row-2">
                   <div>
                     <label>Cabin</label>
-                    <input id="cabin" value="Business" />
+                    <select id="cabin">
+                      <option value="economy">Economy</option>
+                      <option value="premium">Premium Economy</option>
+                      <option value="business" selected>Business</option>
+                      <option value="first">First</option>
+                    </select>
                   </div>
                   <div>
                     <label>Max Mileage</label>
@@ -1087,11 +1094,10 @@
                 <div class="toggle-row">
                   <span class="toggle-label">Direct Flights Only</span>
                   <label
-                    class="switch is-locked"
+                    class="switch"
                     for="onlyDirectFlights"
-                    data-tooltip="Locked in this release. Edit code to unlock."
                   >
-                    <input id="onlyDirectFlights" type="checkbox" checked disabled />
+                    <input id="onlyDirectFlights" type="checkbox" checked />
                     <span class="switch-slider"></span>
                   </label>
                 </div>
@@ -1249,13 +1255,14 @@
 
     function queryParamsFromForm() {
       const cabinValue = (document.getElementById("cabin").value || "").trim();
+      const onlyDirectEl = document.getElementById("onlyDirectFlights");
       return {
         origin_airport: serializeAirportCsv(document.getElementById("origin").value),
         destination_airport: serializeAirportCsv(document.getElementById("destination").value),
         start_date: document.getElementById("startDate").value,
         end_date: document.getElementById("endDate").value,
-        cabin: cabinValue ? cabinValue.toLowerCase() : "business",
-        only_direct_flights: "true",
+        cabin: cabinValue || "business",
+        only_direct_flights: onlyDirectEl && onlyDirectEl.checked ? "true" : "false",
         order_by: "lowest_mileage",
         take: "200",
       };
@@ -1269,7 +1276,7 @@
         start_date: p.start_date || "",
         end_date: p.end_date || "",
         cabin: String(p.cabin || "business").toLowerCase(),
-        only_direct_flights: "true",
+        only_direct_flights: parseBooleanish(p.only_direct_flights, true) ? "true" : "false",
         order_by: p.order_by || "lowest_mileage",
         take: String(p.take || "200"),
       };
@@ -1291,22 +1298,16 @@
     }
 
     function attachCriteriaChangeWatchers() {
-      const ids = ["origin", "destination", "startDate", "endDate", "cabin"];
+      const ids = ["origin", "destination", "startDate", "endDate", "cabin", "onlyDirectFlights"];
       ids.forEach((id) => {
         const el = document.getElementById(id);
         if (!el) return;
-        const evt = el.tagName === "INPUT" && el.type === "checkbox" ? "change" : "input";
+        const evt = (el.tagName === "INPUT" && el.type === "checkbox") || el.tagName === "SELECT" ? "change" : "input";
         el.addEventListener(evt, updateCriteriaApplyButton);
         if (evt !== "change") {
           el.addEventListener("change", updateCriteriaApplyButton);
         }
       });
-    }
-
-    function formatCabinDisplay(value) {
-      const raw = String(value || "").trim();
-      if (!raw) return "Business";
-      return raw.charAt(0).toUpperCase() + raw.slice(1).toLowerCase();
     }
 
     function sanitizeIntegerInput(el) {
@@ -1787,12 +1788,12 @@
       document.getElementById("destination").value = normalizeAirportCsv(d.destination_airport || "");
       document.getElementById("startDate").value = d.start_date || "";
       document.getElementById("endDate").value = d.end_date || "";
-      document.getElementById("cabin").value = formatCabinDisplay(d.cabin || "business");
+      document.getElementById("cabin").value = String(d.cabin || "business").toLowerCase();
       const initialMaxMileage = Number(state.nextQuery?.max_mileage || 100000);
       document.getElementById("maxMileage").value = numberWithComma(initialMaxMileage);
       const onlyDirect = document.getElementById("onlyDirectFlights");
       if (onlyDirect) {
-        onlyDirect.checked = true;
+        onlyDirect.checked = parseBooleanish(d.only_direct_flights, true);
       }
       renderPast();
       renderUpcoming();

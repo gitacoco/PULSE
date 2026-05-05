@@ -92,6 +92,10 @@ def build_search_url(params: dict) -> str:
 
 def _extract_airlines(row: dict) -> str:
     for key in [
+        "FDirectAirlinesRaw",
+        "FDirectAirlines",
+        "FAirlinesRaw",
+        "FAirlines",
         "JDirectAirlinesRaw",
         "JDirectAirlines",
         "JAirlinesRaw",
@@ -215,20 +219,73 @@ def run_seats_query(params: dict) -> dict:
         raise RuntimeError(f"Seats API HTTP {exc.code}: {detail or exc.reason}") from exc
 
 
-def extract_hits(payload: dict, max_mileage: int) -> list:
+def _parse_boolish(value, default: bool = False) -> bool:
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        lowered = value.strip().lower()
+        if lowered in {"1", "true", "yes", "on"}:
+            return True
+        if lowered in {"0", "false", "no", "off"}:
+            return False
+    return default
+
+
+def _cabin_code_from_value(value: str) -> str:
+    v = (value or "").strip().lower()
+    mapping = {
+        "economy": "Y",
+        "premium": "W",
+        "premium_economy": "W",
+        "premium-economy": "W",
+        "business": "J",
+        "first": "F",
+        "y": "Y",
+        "w": "W",
+        "j": "J",
+        "f": "F",
+    }
+    return mapping.get(v, "J")
+
+
+def _parse_intish(value, default: int = 0) -> int:
+    if isinstance(value, int):
+        return value
+    if isinstance(value, float):
+        return int(value)
+    if isinstance(value, str):
+        cleaned = value.replace(",", "").strip()
+        if cleaned.isdigit():
+            return int(cleaned)
+    return default
+
+
+def extract_hits(
+    payload: dict,
+    max_mileage: int,
+    only_direct_flights: bool = True,
+    cabin_code: str = "J",
+) -> list:
     rows = payload.get("data", []) if isinstance(payload, dict) else []
     hits = []
+    cabin_prefix = (cabin_code or "J").strip().upper() or "J"
     for row in rows:
-        if not row.get("JAvailable"):
+        available = bool(row.get(f"{cabin_prefix}Available"))
+        if not available:
             continue
-        if not (row.get("JDirect") or row.get("JDirectRaw")):
+        is_direct = bool(row.get(f"{cabin_prefix}Direct") or row.get(f"{cabin_prefix}DirectRaw"))
+        if only_direct_flights and not is_direct:
             continue
-        mileage = row.get("JMileageCostRaw") or 0
+        mileage = _parse_intish(
+            row.get(f"{cabin_prefix}MileageCostRaw"),
+            _parse_intish(row.get(f"{cabin_prefix}MileageCost"), 0),
+        )
         if mileage > max_mileage:
             continue
         route = row.get("Route") or {}
         airlines = _extract_airlines(row)
         flight_numbers = _extract_flight_numbers(row)
+        seats = row.get(f"{cabin_prefix}RemainingSeats")
         hits.append(
             {
                 "date": row.get("Date"),
@@ -238,7 +295,7 @@ def extract_hits(payload: dict, max_mileage: int) -> list:
                 "airlines": airlines,
                 "flight_numbers": flight_numbers,
                 "mileage": mileage,
-                "seats": row.get("JRemainingSeats"),
+                "seats": seats,
             }
         )
     return hits
@@ -246,7 +303,14 @@ def extract_hits(payload: dict, max_mileage: int) -> list:
 
 def _build_query_record(params: dict, max_mileage: int) -> dict:
     api_response = run_seats_query(params)
-    hits = extract_hits(api_response, max_mileage=max_mileage)
+    only_direct_flights = _parse_boolish((params or {}).get("only_direct_flights"), True)
+    cabin_code = _cabin_code_from_value(str((params or {}).get("cabin") or "business"))
+    hits = extract_hits(
+        api_response,
+        max_mileage=max_mileage,
+        only_direct_flights=only_direct_flights,
+        cabin_code=cabin_code,
+    )
     rows = api_response.get("data", []) if isinstance(api_response, dict) else []
     return {
         "id": str(uuid.uuid4()),
